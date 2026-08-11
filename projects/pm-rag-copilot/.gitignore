@@ -1,0 +1,19 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local ChromaDB Vector Databases
+chroma_db/
+chroma_db_langchain/
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+!.env.example
+
+# OS Files
+.DS_Store
