@@ -21,7 +21,7 @@ In **Version 1**, we manually implemented every step: loading files with `os.wal
 | `EmbeddingModel` (`SentenceTransformer.encode`) | `HuggingFaceEmbeddings` | Automatically downloads and manages local embedding model weights. |
 | `VectorStore` (`chromadb.PersistentClient`) | `Chroma.from_documents` | Automatically creates collection, computes embeddings, and persists indices to disk in one line. |
 | `Retriever` (custom distance filtering) | `vector_store.as_retriever()` | Wraps vector store in standard Runnable interface with `similarity_score_threshold`. |
-| `PromptBuilder` + `OllamaClient` | **LCEL Chain** (`retriever | prompt | llm | StrOutputParser`) | Chains together retrieval, prompt injection, LLM calling, and output parsing using standard Unix-like pipe syntax (`|`). |
+| `PromptBuilder` + `OllamaClient` | **LCEL Chain** (`retriever \| prompt \| llm \| StrOutputParser`) | Chains together retrieval, prompt injection, LLM calling, and output parsing using standard Unix-like pipe syntax (`|`). |
 
 ---
 

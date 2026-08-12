@@ -1,5 +1,6 @@
 # Loop Engineering: The Next Rename, Explained for PMs
 > Originally published on LinkedIn [The New Buzz on the AI Block: Loop Engineering](https://www.linkedin.com/pulse/new-buzz-ai-block-loop-engineering-yogita-suryawanshi-zauce/)
+
 By now, there's a good chance you've heard the term *loop engineering* — and there's an equally good chance an AI influencer somewhere has used it to convince you that there's yet another thing you urgently need to learn or risk falling behind. If you haven't heard it yet, don't worry, you're not alone — I only came across it myself a few weeks ago.
 
 This article is my attempt to cut through that noise: what loop engineering actually is, where it fits with everything that came before it, and whether it's worth your attention — written so it makes sense whether or not you have a technical background.
