@@ -1,0 +1,87 @@
+name: Competitive Intelligence Daily Run
+
+on:
+  schedule:
+    # 7:30 UTC every day.
+    # NOTE: The schedule.time in config.yaml and the cron expression here are NOT
+    # automatically synchronized; they must be kept in sync manually. This is a known v1 limitation.
+    - cron: "30 7 * * *"
+  workflow_dispatch:
+    inputs:
+      reset_state:
+        description: "Clear previous run state before this run (for testing)"
+        type: boolean
+        default: false
+
+# GUARDRAIL: Concurrency Guard
+# Ensures that scheduled and manually triggered runs do not run concurrently and race on state files.
+concurrency:
+  group: competitive-intel-agent-run
+  cancel-in-progress: false
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: projects/pm-competitive-intel-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run agent pipeline
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          REPORT_TO_EMAIL: ${{ secrets.REPORT_TO_EMAIL }}
+        run: |
+          # If reset_state input is true, pass --reset-state
+          ARGS=""
+          if [ "${{ github.event.inputs.reset_state }}" = "true" ]; then
+            ARGS="--reset-state"
+          fi
+          python src/run_agent.py $ARGS
+
+      # Renders email using GHA helper action dawidd6/action-send-mail
+      - name: Send Daily Report Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Competitive Intelligence Digest - ${{ github.event.repository.updated_at }}"
+          to: ${{ secrets.REPORT_TO_EMAIL }}
+          from: "Competitive Intelligence Agent <${{ secrets.SMTP_USERNAME }}>"
+          html_body: file://projects/pm-competitive-intel-agent/state/latest_report.html
+          convert_markdown: true
+
+      # GUARDRAIL: State-commit-after-confirmed-delivery ordering
+      # We only commit the updated state file seen_items.yaml to Git after the mail step completes.
+      # Because GHA runners are ephemeral, if the email delivery fails above, the runner terminates,
+      # the git commit/push step is skipped, and the state updates are discarded.
+      - name: Commit and Push state changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/seen_items.yaml
+          
+          # Only commit and push if changes actually exist to avoid GHA errors
+          if ! git diff --quiet || ! git diff --staged --quiet; then
+            git commit -m "chore: update daily seen items state [skip ci]"
+            git push
+          else
+            echo "No state updates to commit."
+          fi

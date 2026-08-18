@@ -1,0 +1,65 @@
+# Litellm provider-prefixed model string.
+# Swap to "anthropic/claude-...", "openai/gpt-...", etc. to change LLM providers.
+llm_model: "gemini/gemini-3.6-flash"
+
+domain:
+  # The high-level industry or technology domain of interest.
+  primary: "luxury passenger vehicles and premium electric cars"
+  # Optional single string. If set, items matching it are flagged and prioritized
+  # in the daily digest, but other general domain items are not filtered out.
+  focus_subdomain: "premium electric vehicles and software-driven features"
+
+competitors:
+  # Direct global luxury competitors (strong in US, China, and EMEA)
+  - name: "Mercedes-Benz"
+    sources: []
+  - name: "Audi"
+    sources: []
+  - name: "Tesla"
+    sources: []
+  # Leading Chinese premium EV/hybrid disrupters
+  - name: "BYD"
+    sources: []
+  - name: "Li Auto"
+    sources: []
+  - name: "NIO"
+    sources: []
+  - name: "Xiaomi"
+    sources: []
+  - name: "Zeekr"
+    sources: []
+  - name: "Aito"
+    sources: []
+  # Traditional luxury competitor strong in the US market
+  - name: "Lexus"
+    sources: []
+
+watchlist:
+  # List of analyst groups, award bodies, and conferences to watch.
+  - name: "BloombergNEF"
+    type: "analyst"
+  - name: "JD Power"
+    type: "analyst"
+  - name: "CES"
+    type: "conference"
+  - name: "Geneva Motor Show"
+    type: "conference"
+
+schedule:
+  # The targeted daily delivery time in 24-hour format (HH:MM).
+  time: "07:30"
+  # The timezone associated with the scheduled delivery time.
+  timezone: "Europe/Berlin"
+
+run_limits:
+  # GUARDRAIL: Cap the number of search queries per execution to prevent api budget/cost runaway.
+  max_search_calls: 25
+  # GUARDRAIL: Cap the number of items formatted in the main report to prevent information overload.
+  # The remainder are summarized as "+N more, see full log".
+  max_report_items: 10
+  # GUARDRAIL: Bounds search results for the very first execution to avoid fetching months of history.
+  cold_start_lookback_hours: 48
+
+delivery:
+  # The fallback email address to receive reports. This will be overridden by the REPORT_TO_EMAIL env var.
+  to_email: "product-team@example.com"

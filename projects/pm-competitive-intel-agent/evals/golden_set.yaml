@@ -1,0 +1,174 @@
+# Golden evaluation set of hand-labeled competitor updates with promptfoo assertions.
+# Used by promptfoo to assert classification accuracy.
+# Target Domain: luxury passenger vehicles and premium electric cars
+# Focus Subdomain: infotainment and telematics
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Mercedes-Benz"
+    title: "Mercedes-Benz launches MB.OS with integrated Google Maps and YouTube"
+    description: "Mercedes-Benz unveiled its custom-built MB.OS architecture, introducing native Google Maps navigation, YouTube streaming, and automated lane-change visual aids to all new E-Class infotainment systems."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Audi"
+    title: "Audi rolls out MMI infotainment app store for third-party developers"
+    description: "Audi announced a new application store integration in their MMI infotainment dashboard, allowing drivers to download Spotify, Webex, and local weather applications directly via the vehicle's eSIM."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Tesla"
+    title: "Tesla holiday update introduces Apple Podcasts and custom lock sounds"
+    description: "Tesla released its annual over-the-air (OTA) holiday software update, introducing Apple Podcasts to the infotainment system and customizable lock sounds via the external speaker."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "BYD"
+    title: "BYD appoints new head of infotainment software development"
+    description: "BYD announced that former Apple car project design lead has joined as Vice President of Intelligent Cockpits to oversee infotainment and voice assistant strategy."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "NIO"
+    title: "NIO mobile app update changes font size in battery log"
+    description: "NIO pushed a minor patch to its iOS app (v5.8.1) that slightly increases the font size of the battery status log text and resolves a minor translation typo in Spanish."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Xiaomi"
+    title: "Xiaomi SU7 infotainment system natively syncs with Apple CarPlay"
+    description: "Xiaomi confirmed its newly released SU7 sports sedan will support wireless Apple CarPlay and iPad dashboard mounting, despite Xiaomi pushing its own HyperOS ecosystem."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Zeekr"
+    title: "Zeekr hits 100k views on YouTube channel overview video"
+    description: "Zeekr's media team posted a thank-you message on social media celebrating 100,000 views on their new Zeekr 001 design showcase video."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Lexus"
+    title: "Lexus is hiring a Lead Telematics Systems Engineer"
+    description: "Lexus posted a job opening on LinkedIn seeking a Lead Engineer in Plano, TX to design future cellular connectivity and remote start modules."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Li Auto"
+    title: "Li Auto announces OTA 5.0 with enhanced multi-screen infotainment controls"
+    description: "Li Auto announced the release of firmware OTA 5.0, which updates the rear passenger entertainment screens to support multiplayer gaming and independent Bluetooth headphone pairings."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Aito"
+    title: "Aito M9 integrates Huawei HarmonyOS 4.0 smart cockpit"
+    description: "The Aito M9 smart SUV will launch featuring Huawei's HarmonyOS 4.0 cockpit, bringing multi-screen collaborative video casting and facial recognition-based user seat profiles."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Mercedes-Benz"
+    title: "How to clean your Mercedes central OLED screen: A video guide"
+    description: "A YouTube short released by Mercedes-Benz customer service showing step-by-step instructions on cleaning fingerprint smudges off the infotainment screen without scratching it."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Tesla"
+    title: "Tesla shifts telematics data storage to local servers in China"
+    description: "To comply with national regulations, Tesla completed a migration of all Chinese vehicle telematics and driving logs to its new data center in Shanghai."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "NIO"
+    title: "NIO partners with operator Orange to deploy 5G telematics in Europe"
+    description: "NIO announced a strategic partnership with telecom giant Orange to equip all European-market ET5 and ET7 vehicles with 5G connectivity for real-time diagnostics."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Xiaomi"
+    title: "Xiaomi changes button padding on steering wheel audio controls"
+    description: "Xiaomi updated the steering wheel layout on the factory assembly line, adjusting the button spacing of the audio volume toggle by 1.2mm for driver thumb comfort."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Zeekr"
+    title: "Zeekr launches satellite-based telematics messaging for emergency response"
+    description: "Zeekr's new premium EV models will feature integrated satellite-linked telematics antennas, allowing emergency text messages and GPS location sharing when cellular networks fail."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Audi"
+    title: "Audi publishes blog post on the history of car radios"
+    description: "A marketing article detailing the evolution of Audi dashboards from the first AM radio in 1970 to the multi-display setups of today."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Lexus"
+    title: "Lexus introduces OTA update enabling remote air-conditioning via telematics"
+    description: "Lexus announced a safety and comfort update for new RX models, allowing owners to remotely control cabin pre-heating and cooling via the Lexus Link smartphone app."
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === true"

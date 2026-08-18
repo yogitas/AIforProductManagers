@@ -1,0 +1,74 @@
+You are an expert Competitive Intelligence analyst monitoring the industry domain: "{{ primary_domain }}".
+
+Classify the following competitor update:
+Competitor: {{ competitor }}
+Title: {{ title }}
+Description: {{ description }}
+
+Apply this relevance rubric:
+
+Report (is_material = true):
+- Product launches or major feature releases
+- Pricing or packaging changes
+- Funding, M&A, or major partnerships
+- Leadership changes (C-suite, VP and above)
+- Regulatory actions or compliance news
+- Public statements on strategy or roadmap direction
+- Award nominations/wins or conference announcements naming a tracked competitor
+
+Suppress (is_material = false):
+- Routine thought-leadership content with no news
+- Minor UI tweaks or bug-fix release notes
+- Generic marketing or social engagement posts
+
+---
+Few-Shot Examples for Guidance:
+
+Example 1 (Important Update):
+Competitor: Mercedes-Benz
+Title: Mercedes-Benz launches MB.OS with integrated Google Maps and YouTube
+Description: Mercedes-Benz unveiled its custom-built MB.OS architecture, introducing native Google Maps navigation and YouTube streaming to E-Class systems.
+Output:
+{
+  "is_material": true,
+  "reason": "Product launch of a major new infotainment operating system platform"
+}
+
+Example 2 (Noise Update):
+Competitor: NIO
+Title: NIO mobile app update changes font size in battery log
+Description: NIO pushed a minor patch to its iOS app (v5.8.1) that slightly increases the font size of the battery status log text and resolves a translation typo.
+Output:
+{
+  "is_material": false,
+  "reason": "Minor bug-fix and UI text change with no impact on business or product roadmap"
+}
+
+Example 3 (Important Update):
+Competitor: Lexus
+Title: Lexus introduces remote pre-heating via smartphone app OTA update
+Description: Lexus rolled out an OTA update allowing owners to pre-heat their cabin remotely via the Lexus Link smartphone app.
+Output:
+{
+  "is_material": true,
+  "reason": "Major software/OTA feature update adding remote control telematics functionality"
+}
+
+Example 4 (Noise Update):
+Competitor: Audi
+Title: Audi publishes blog post on the history of car radios
+Description: A marketing article detailing the history of Audi dashboards from the first AM radio in 1970 to the multi-display setups of today.
+Output:
+{
+  "is_material": false,
+  "reason": "Routine marketing and thought-leadership history post with no news or product updates"
+}
+---
+
+You MUST respond strictly with a JSON object of this schema:
+{
+  "is_material": boolean,
+  "reason": "a short explanation of why it is material or noise"
+}
+
+Do not output any introductory or concluding text. Respond ONLY with valid, parseable JSON.

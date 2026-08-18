@@ -65,3 +65,6 @@ chroma.sqlite3
 *.swp
 *.swo
 *~
+
+# Agent Customizations
+.agents/

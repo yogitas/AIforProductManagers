@@ -1,0 +1,29 @@
+# PROMPTFOO EVALUATION HARNESS CONFIGURATION
+#
+# PEDAGOGICAL NOTE FOR READERS:
+# Promptfoo is a model-agnostic, open-source testing framework for LLM prompts.
+# By configuring this YAML, we can programmatically run our materiality prompt against
+# a hand-labeled "golden set" of examples, ensuring changes to the prompt or model do
+# not cause regressions (e.g. classifying product launches as noise).
+
+# 1. Prompt Definition
+# We point to the exact same prompt template file used in production.
+# This prevents code duplication and guarantees we test what actually runs.
+prompts:
+  - file://../src/prompts/materiality_prompt.txt
+
+# 2. Provider Definition
+# We reference our custom python script provider (evals/provider.py).
+# It uses LiteLLM so that promptfoo tests execute against the exact same API, model,
+# and environment configs used by the main application.
+providers:
+  - id: file://provider.py
+    label: "LiteLLM Production Classifier"
+
+# 3. Test Cases Configuration
+# We pull the hand-labeled test cases directly from evals/golden_set.yaml.
+# Each test case declares variables (competitor, title, description) and assertions:
+# - `is-json`: Asserts the LLM output is valid parseable JSON.
+# - `javascript`: Parses output JSON programmatically and asserts `is_material` boolean correctness.
+tests:
+  - file://golden_set.yaml

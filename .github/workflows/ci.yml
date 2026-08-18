@@ -1,0 +1,47 @@
+name: Promptfoo CI Evals
+
+on:
+  push:
+    paths:
+      - "projects/pm-competitive-intel-agent/src/**"
+      - "projects/pm-competitive-intel-agent/evals/**"
+  pull_request:
+    paths:
+      - "projects/pm-competitive-intel-agent/src/**"
+      - "projects/pm-competitive-intel-agent/evals/**"
+  workflow_dispatch:
+
+jobs:
+  run-promptfoo-evals:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: projects/pm-competitive-intel-agent
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Run promptfoo evaluation
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: "gemini/gemini-2.5-flash"
+        run: |
+          npx -y promptfoo@latest eval --config evals/promptfoo_config.yaml
