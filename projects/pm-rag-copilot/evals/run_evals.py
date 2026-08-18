@@ -56,7 +56,7 @@ def run_evals():
 
         # 1. Retrieval Layer
         retrieved_chunks = retriever.retrieve(question)
-        hit_rate = evaluator.evaluate_retrieval_hit_rate(retrieved_chunks, expected_source)
+        hit_rate = evaluator.evaluate_retrieval_hit_rate(retrieved_chunks, expected_source, is_in_domain)
 
         # 2. Generation Layer
         has_context = len(retrieved_chunks) > 0

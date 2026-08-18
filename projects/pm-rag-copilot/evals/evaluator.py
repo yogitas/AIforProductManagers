@@ -14,11 +14,14 @@ class RAGEvaluator:
     def __init__(self, model_name: str = "llama3.1"):
         self.ollama = OllamaClient(model=model_name)
 
-    def evaluate_retrieval_hit_rate(self, retrieved_chunks: List[Any], expected_source: str) -> float:
+    def evaluate_retrieval_hit_rate(self, retrieved_chunks: List[Any], expected_source: str, is_in_domain: bool = True) -> float:
         """Measures if the correct source file was retrieved."""
         if expected_source is None:
-            # For out-of-domain/missing context, we expect no retrieval
-            return 1.0 if not retrieved_chunks else 0.0
+            if not is_in_domain:
+                # For out-of-domain, we expect no retrieval
+                return 1.0 if not retrieved_chunks else 0.0
+            # For in-domain queries without an expected source, hit rate is not penalized
+            return 1.0
 
         for chunk in retrieved_chunks:
             source = chunk.metadata.get("source", "")
