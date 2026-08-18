@@ -99,6 +99,15 @@ Calculate retrieval accuracy using standard search metrics [3]:
 - **Relevance & Helpfulness**: Verify the answer directly solves the user question [1], [2].
 - **QA Correctness**: Compare the response against the golden answer [3].
 
+*Once retrieval, response generation, and evaluation are complete, the final RAG evaluated dataset expands to append intermediate retrieval flags and final LLM metrics:*
+
+| Question | Retrieved Context | Model Response | Reference (Golden) | Hit Rate | Groundedness | Relevance | QA Correctness |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| *"What is the refund policy?"* | *"Refunds are available within 30 days of receipt."* | *"You can request a refund within 30 days."* | *"Refunds can be requested within 30 days."* | **1.0** | **1.0** | **1.0** | **1.0** |
+| *"What is the warranty period?"* | *"The product comes with a 2-year warranty."* | *"It comes with a 5-year warranty."* | *"The warranty period is 2 years."* | **1.0** | **0.0** *(Hallucination)* | **1.0** | **0.0** |
+| *"What is the parental leave policy?"* | *"Holiday rules: 15 days paid leave. Office NY..."* | *"We offer 15 days paid holiday leave."* | *"Paid parental leave is 26 weeks."* | **0.0** *(Wrong context)* | **1.0** | **0.0** | **0.0** |
+| *"How do I bake a cake?"* | *[None]* | *"I couldn't find enough information."* | *"I couldn't find enough information."* | **1.0** *(Correct fallback)* | **1.0** | **1.0** | **1.0** |
+
 ---
 
 ## 3. Separating Retrieval vs. Generation Failures
