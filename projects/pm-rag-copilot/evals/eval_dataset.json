@@ -1,0 +1,44 @@
+[
+  {
+    "id": "EVAL-01",
+    "question": "How do I create an Epic?",
+    "expected_source": "epics.md",
+    "key_facts": ["Create button", "Issue Type", "Epic", "Summary", "Epic Name"],
+    "is_in_domain": true
+  },
+  {
+    "id": "EVAL-02",
+    "question": "How do I create a custom workflow?",
+    "expected_source": "workflows.md",
+    "key_facts": ["Project Settings", "Workflows", "Add Workflow", "Status", "Transition", "Publish Draft"],
+    "is_in_domain": true
+  },
+  {
+    "id": "EVAL-03",
+    "question": "How do I create a Sprint?",
+    "expected_source": "sprints.md",
+    "key_facts": ["Backlog", "Create Sprint", "Start Sprint"],
+    "is_in_domain": true
+  },
+  {
+    "id": "EVAL-04",
+    "question": "How do I configure story points?",
+    "expected_source": "story_points.md",
+    "key_facts": ["Board Settings", "Estimation", "Story Points"],
+    "is_in_domain": true
+  },
+  {
+    "id": "EVAL-05",
+    "question": "How do I configure Jira Structures for roadmaps?",
+    "expected_source": null,
+    "key_facts": ["couldn't find enough information"],
+    "is_in_domain": true
+  },
+  {
+    "id": "EVAL-06",
+    "question": "What is the recipe for baking a chocolate cake?",
+    "expected_source": null,
+    "key_facts": ["couldn't find enough information"],
+    "is_in_domain": false
+  }
+]

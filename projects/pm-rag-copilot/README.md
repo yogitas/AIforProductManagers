@@ -114,3 +114,9 @@ python3 -m pytest tests/
 # Run automated end-to-end verification
 python3 verify_rag.py
 ```
+
+### 6. Run RAG Quality Evaluations (LLM-as-a-Judge)
+Measure your retrieval hit rate, groundedness/faithfulness (via local LLM judge), QA completeness, and compliance with safety safeguards:
+```bash
+python3 -m evals.run_evals
+```
