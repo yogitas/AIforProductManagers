@@ -23,14 +23,6 @@ eval_dataset = [
 ]
 ```
 
-*Once response generation and evaluation are complete, the final evaluated dataset schema expands to append model outputs and scores:*
-
-| Instruction | Context | Reference (Golden) | Model Response | Summarization Quality | Groundedness | Instruction Following |
-|---|---|---|---|---|---|---|
-| Summarize the article in 3 sentences. | ...article text A... | ...golden summary A... | *[Model Summary A]* | 4.5 / 5.0 | 1.0 | 1.0 |
-| Summarize the article in 3 sentences. | ...article text B... | ...golden summary B... | *[Model Summary B]* | 3.8 / 5.0 | 0.8 | 1.0 |
-
----
 ### Step 2: Generate Responses
 Loop through the dataset and collect model answers:
 ```python
@@ -58,6 +50,13 @@ instruction_following = 1.0
 groundedness = 0.94
 safety = 1.0
 ```
+
+*Once response generation and evaluation are complete, the final evaluated dataset schema expands to append model outputs and scores:*
+
+| Instruction | Context | Reference (Golden) | Model Response | Summarization Quality | Groundedness | Instruction Following |
+|---|---|---|---|---|---|---|
+| Summarize the article in 3 sentences. | ...article text A... | ...golden summary A... | *[Model Summary A]* | 4.5 / 5.0 | 1.0 | 1.0 |
+| Summarize the article in 3 sentences. | ...article text B... | ...golden summary B... | *[Model Summary B]* | 3.8 / 5.0 | 0.8 | 1.0 |
 
 ---
 
