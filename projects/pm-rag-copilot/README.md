@@ -1,122 +1,140 @@
-# PM Copilot — Hands-on RAG Demo for Product Managers
+# PM Copilot: Local RAG Search Agent (`pm-rag-copilot`)
 
-Welcome to **PM Copilot**, a hands-on learning project demonstrating **Retrieval-Augmented Generation (RAG) end-to-end** using a real Product Manager use case: answering questions about Jira software documentation.
-
-This project is built 100% with free, open-source local components:
-- **Python 3**
-- **Ollama** (Local LLM inference using `llama3.1`)
-- **Sentence Transformers** (`all-MiniLM-L6-v2` for open vector embeddings)
-- **ChromaDB** (Local vector database)
-- **pytest** (Testing framework)
+This project is a reference implementation of a production-minded Retrieval-Augmented Generation (RAG) agent built completely with local, open-source tools. It is designed to teach other Product Managers (PMs) how RAG operates under the hood by showing a side-by-side comparison of manual RAG built in plain Python vs. RAG built using LangChain.
 
 ---
 
-## 🎯 What Problem Are We Solving?
+## 1. The Product Problem
 
-Product Managers frequently navigate complex SaaS documentation (workflows, sprint setup, estimation, automation rules). Standard LLMs hallucinate specific configuration steps. RAG solves this by retrieving exact, curated documentation passages and providing them directly to the LLM to generate verifiable answers with source citations.
+As a Product Manager, customer success manager, or developer, navigating complex corporate documentation (workflows, sprint rules, setup configurations, and automation guides) is a massive time sink. Teams spend hours looking up configuration guidelines inside Jira, Confluence, and internal wikis.
 
-```text
-User Question ──> Vector Search ──> Relevant Jira Chunks ──> LLM Prompt ──> Answer + Citations
-```
+This information bottleneck leads to:
+*   **Customer Support Delay:** Support agents take longer to resolve tickets due to search latency across internal wikis.
+*   **Operational Errors:** Setup mistakes happen when engineers configure complex sprint rules based on memory.
+*   **Hallucination Risks:** Off-the-shelf commercial LLMs (like ChatGPT or Claude) do not have access to private company wikis and hallucinate specific workflow steps.
 
----
-
-## 📂 Project Structure Overview
-
-This repository is intentionally structured into two side-by-side versions so anyone can easily compare **how RAG works under the hood** versus **how frameworks simplify it**:
-
-```text
-pm-rag-copilot/
-│
-├── 📁 v1_scratch/          <-- VERSION 1: Pure Python manual RAG (No frameworks)
-│   ├── ingestion/         # Document loading & text chunking
-│   ├── embeddings/        # Vector generation via SentenceTransformers
-│   ├── retrieval/         # Vector database (ChromaDB) & cosine distance search
-│   ├── generation/        # Prompt augmentation & local Ollama LLM calling
-│   └── app/cli.py         # Interactive CLI with educational /debug mode
-│
-├── 📁 v2_langchain/        <-- VERSION 2: Rebuilt using LangChain abstractions
-│   ├── pipeline.py        # Complete pipeline in ~60 lines of LangChain code
-│   └── cli.py             # LangChain CLI interface
-│
-├── 📁 data/raw/            <-- Curated Jira documentation (Epics, Workflows, Sprints, etc.)
-├── 📁 tests/               <-- Automated pytest suite
-├── verify_rag.py          <-- Automated end-to-end verification script
-├── requirements.txt       <-- Dependencies
-└── README.md              <-- This guide
-```
+### Our Solution
+**PM Copilot** is our product. It is a locally hosted, privacy-first RAG agent that ingests raw Jira markdown documentation, stores it in a semantic vector database, and answers user queries with verifiable citations. Because it retrieves real text chunks and is restricted by safety prompts, it cannot make up answers, ensuring 100% compliance with your documentation.
 
 ---
 
-## ⚖️ Version 1 vs. Version 2 Comparison
+## 2. v1 Strategic Tradeoffs & Design Decisions
 
-| Feature | [Version 1 (v1_scratch/)](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch) | [Version 2 (v2_langchain/)](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v2_langchain) |
-| :--- | :--- | :--- |
-| **Concept** | Built from scratch without frameworks. | Built using LangChain abstractions. |
-| **Code Visibility** | Every loop, embedding vector, and prompt string is visible. | Encapsulated in standard `DocumentLoader`, `Chroma`, and `LCEL` chains. |
-| **Educational Debug**| Interactive `/debug` mode inspects vectors & prompt injection. | Standard LCEL stream/invoke execution. |
-| **Code Size** | ~350 lines across modular Python files. | ~60 lines leveraging LangChain. |
-| **Best For** | **Understanding what RAG actually does step-by-step.** | **Understanding how production frameworks accelerate dev speed.** |
+To demonstrate how RAG actually operates and prove production viability, we made several key trade-offs in our architecture:
+
+### A. Local Open-Source Models (Ollama) vs. Commercial APIs
+*   **Decision:** We run Ollama locally using `llama3.1` and `SentenceTransformers` (`all-MiniLM-L6-v2`) for embeddings.
+*   **Trade-off & Rationale:** Relying on commercial APIs (like OpenAI or Anthropic) introduces token costs and data privacy concerns—private Jira documentation is sent to external servers. Running a local stack keeps the agent free to execute and ensures zero data leaks.
+
+### B. Framework-Free Python (v1) vs. Orchestrator Abstractions (v2)
+*   **Decision:** We built two side-by-side versions of RAG: Version 1 built completely from scratch using standard Python loops, and Version 2 built using LangChain.
+*   **Trade-off & Rationale:** Frameworks like LangChain hide the core components (chunking, vector math, prompt injection) behind high-level wrappers. Building Version 1 in plain Python is essential to teach the core concepts (how text becomes coordinate vectors, how cosine similarity measures distance, and how prompts are augmented). Version 2 is built to demonstrate developer velocity.
+
+### C. Local Vector Database (ChromaDB) vs. Enterprise Cloud Indexes
+*   **Decision:** We persist embeddings locally using ChromaDB in client-server mode.
+*   **Trade-off & Rationale:** Cloud vector databases (like Pinecone or Milvus) add setup complexity, api-key management, and monthly costs. Persisting ChromaDB locally keeps the setup lightweight and fully functional offline.
+
+### D. RAG (In-Context Injection) vs. Model Fine-Tuning
+*   **Decision:** We use vector similarity search to inject context chunks into the LLM prompt.
+*   **Trade-off & Rationale:** Fine-tuning a model on company documentation is slow, expensive, suffers from catastrophic forgetting, and cannot supply real-time source citations. RAG is cheap, auditable, updates instantly when documents change, and cites its sources.
+
+### E. Guardrails & Failure Handling (Control Systems)
+*   **Decision:** We built system constraints to handle out-of-domain queries and search failures:
+    *   *Overlap Chunks:* Chunks have a 100-character overlap to prevent losing semantic context at boundaries.
+    *   *Similarity Score Rejection:* Chunks with a cosine distance greater than `0.75` are rejected. If no chunks pass the threshold, the LLM outputs a pre-defined fallback: *"I do not have enough information to answer this query,"* preventing hallucinations.
+    *   *Out-of-Domain Query Rejection:* The prompt restricts the LLM from answering general-knowledge questions.
+
+### F. Automated Prompt & RAG Quality Evaluation (Evals Suite)
+*   **Decision:** We run [`evals/run_evals.py`](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/evals/run_evals.py) using an LLM-as-a-judge approach to measure accuracy against a JSON test dataset.
+*   **Trade-off & Rationale:** Traditional software tests cannot measure LLM output quality. Our evaluation suite programmatically scores the pipeline on key metrics before release.
 
 ---
 
-## 🧩 Step-by-Step RAG Breakdown
+## 3. What "Proper Behavior" Looks Like (Our Evaluation Focus)
 
-| Major RAG Step | What is it? | Why do we need it? | Where to see it in Code |
-| :--- | :--- | :--- | :--- |
-| **1. Document Loading** | Reads raw `.md` files from disk. | Converts unstructured files into structured `Document` objects with metadata. | [v1_scratch/ingestion/loader.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/ingestion/loader.py) |
-| **2. Text Chunking** | Breaks large documents into small overlapping passages. | Enables precise semantic retrieval and prevents exceeding LLM context limits. | [v1_scratch/ingestion/chunker.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/ingestion/chunker.py) |
-| **3. Embedding Generation** | Converts text into 384-dimensional mathematical vectors. | Translates words into coordinates where similar meanings land close together. | [v1_scratch/embeddings/embedder.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/embeddings/embedder.py) |
-| **4. Vector Storage** | Persists vectors and metadata in ChromaDB. | Enables sub-second nearest-neighbor vector similarity lookups. | [v1_scratch/retrieval/vector_store.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/retrieval/vector_store.py) |
-| **5. Vector Retrieval** | Finds closest chunks using Cosine Distance with safeguards. | Retrieves top $K$ relevant facts and rejects out-of-domain queries to prevent hallucinations. | [v1_scratch/retrieval/retriever.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/retrieval/retriever.py) |
-| **6. Augmented Prompting** | Injects retrieved chunks into a system prompt. | Forces the LLM to answer strictly using provided documentation. | [v1_scratch/generation/prompt.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/generation/prompt.py) |
-| **7. LLM Generation** | Calls local Ollama model to synthesize final answer. | Produces clean natural language answers citing exact source files. | [v1_scratch/generation/ollama.py](file:///Users/yogitas/AIportfolio/AIforProductManagers/projects/pm-rag-copilot/v1_scratch/generation/ollama.py) |
+For the PM Copilot to be release-ready, it must meet two critical metrics tracked by our automated evaluation scorecard:
+
+*   **1. Retrieval Hit Rate (Target: >=90%):** Measures whether the vector search successfully retrieves the exact document chunk containing the answer. If the hit rate is low, the LLM will not have the correct context to answer the question.
+*   **2. LLM Groundedness (Target: >=90%):** Evaluates if the LLM's final answer is derived *only* from the retrieved chunks. If the model introduces external information, it fails the groundedness check (faithfulness), indicating a hallucination.
 
 ---
 
-## 🚀 Quick Start Guide
+## 4. What v1 / Scratch MVP Does
 
-### 1. Prerequisites
-- Python 3.9+
-- [Ollama](https://ollama.com/) running locally (`ollama serve`).
-- Pull the local model:
-  ```bash
-  ollama pull llama3.1
-  ```
+*   **Raw Markdown Ingestion:** Parses local Jira documentation `.md` files.
+*   **Character Split Chunking:** Splits documents into 500-character passages with 100-character overlaps.
+*   **Local Embedding Generation:** Converts text passages into 384-dimensional coordinates using SentenceTransformers.
+*   **Cosine Distance Search:** Programmatically computes the nearest neighbors to locate the most relevant facts.
+*   **Interactive CLI with /debug Mode:** Includes a command-line interface where entering `/debug` displays the raw embedding coordinates, cosine distances, and prompt injection parameters.
 
-### 2. Setup Dependencies
+---
+
+## 5. What v2 / LangChain Integration Does
+
+*   Replicates the exact functionality of v1 in under 60 lines of code.
+*   Uses standard LangChain abstractions: `DirectoryLoader`, `RecursiveCharacterTextSplitter`, `Chroma`, and LCEL (`LangChain Expression Language`) chains.
+*   Shows how production frameworks simplify ingestion and retrieval.
+
+---
+
+## 6. Deliberately Cut from MVP (Roadmap)
+
+To maintain a lean codebase, the following features were deliberately deferred from the initial MVP:
+
+*   **Dynamic Chunk Sizing:** Splitting documents semantically based on markdown headers instead of static character counts.
+*   **Hybrid Search:** Combining vector similarity search with BM25 keyword search to capture exact terms (like bug numbers).
+*   **Multi-Query Expansion:** Generating variations of user queries to retrieve a wider range of relevant documents.
+*   **Cross-Encoder Re-ranking:** Re-ordering search results using a secondary model to ensure the absolute best chunks are placed in the prompt.
+
+---
+
+## 7. Known Limitations
+
+*   **Ollama Hardware Dependency:** Running LLMs locally depends on the host machine's CPU/GPU. Responses may have latency on older hardware.
+*   **Static Split Boundaries:** Character-based chunking can occasionally split code blocks or tables in half, degrading context quality.
+
+---
+
+## 8. How to Configure This Agent for Yourself
+
+If you download this repository, follow these steps to configure and run the RAG agent locally:
+
+### Step 1: Install Ollama & Pull the Model
+Download [Ollama](https://ollama.com/) on your local machine, run the application, and pull the model:
 ```bash
-cd projects/pm-rag-copilot
+ollama pull llama3.1
+```
+
+### Step 2: Install Python Dependencies
+Set up your virtual environment and install requirements:
+```bash
+# Navigate to projects/pm-rag-copilot
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Run Version 1 (From Scratch)
+### Step 3: Run Ingestion and Launch Version 1 (Scratch)
 ```bash
-# Step A: Ingest Jira documentation into ChromaDB
+# Ingest raw documentation into local ChromaDB
 python3 -m v1_scratch.ingestion.ingest
 
-# Step B: Launch interactive CLI
+# Launch the interactive CLI
 python3 -m v1_scratch.app.cli
 ```
+*   *Tip:* Type `/debug` inside the CLI to inspect vectors, distance scores, and prompt injections!
 
-> **Tip for PMs**: Inside the CLI, type `/debug` and ask any question to inspect the raw embedding vectors, distance scores, retrieved chunks, and prompt injection in real time!
-
-### 4. Run Version 2 (LangChain)
+### Step 4: Run Version 2 (LangChain)
+To execute the LangChain-based version:
 ```bash
 python3 -m v2_langchain.cli
 ```
 
-### 5. Run Automated Tests & End-to-End Verification
+### Step 5: Run Automated Tests and Quality Evaluations
 ```bash
 # Run unit tests
 python3 -m pytest tests/
 
-# Run automated end-to-end verification
-python3 verify_rag.py
-```
-
-### 6. Run RAG Quality Evaluations (LLM-as-a-Judge)
-Measure your retrieval hit rate, groundedness/faithfulness (via local LLM judge), QA completeness, and compliance with safety safeguards:
-```bash
+# Run the end-to-end evaluation scorecard (Groundedness & Hit Rate checks)
 python3 -m evals.run_evals
 ```
