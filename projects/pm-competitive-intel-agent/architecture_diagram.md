@@ -19,15 +19,16 @@ graph TB
     classDef guard fill:#F3E8FD,stroke:#8430E8,stroke-width:2px,color:#000;
 
     %% --- TRIGGER LAYER ---
-    subgraph Trigger Layer [Local Triggers / Actions]
-        Local_Cron["🕒 macOS launchd / Linux cron<br/>(Local Scheduled Run)"]:::trigger
-        Local_CLI["💻 Local Terminal Command<br/>(Manual Trigger)"]:::trigger
+    subgraph Trigger Layer [Local Triggers & Actions]
+        Local_Cron["🕒 macOS launchd / Linux cron<br/>(Scheduled execution)"]:::trigger
+        Local_CLI["💻 Local Terminal Command<br/>(Manual execution)"]:::trigger
+        User_Feed["👤 User Manual Edits<br/>(Writes feedback logs)"]:::trigger
     end
 
     %% --- AGENT CONTROL & PERCEPTION ---
     subgraph Agent Core [Perception & Ingestion]
         Orchestrator["🤖 Agent Orchestrator<br/>(run_agent.py)"]:::brain
-        ConfigLoader["⚙️ Config Loader<br/>(config_loader.py + Pydantic)"]:::guard
+        ConfigLoader["⚙️ Config Loader<br/>(config_loader.py + Pydantic Checks)"]:::guard
         BudgetCtrl["🛡️ Call Budget Manager<br/>(budget.py Limit Tracker)"]:::guard
         
         subgraph Perception Sensors
@@ -49,19 +50,26 @@ graph TB
         MemoryStore[("🧠 Preference Memory<br/>preference_memory.yaml")]:::store
     end
 
-    %% --- ACTUATORS ---
+    %% --- ACTUATORS & OUTPUTS ---
     subgraph Actuators [Action Delivery]
         ReportGen["📝 Report Formatter<br/>(report.py MD/HTML)"]:::actuator
-        MailSender["📧 Email / Browser Open<br/>(deliver.py + SMTP / webbrowser)"]:::actuator
+        DeliveryRouter["📧 Delivery Router<br/>(deliver.py routing logic)"]:::actuator
+        Dashboard["🖥️ Web Browser Dashboard<br/>(Auto-Opens HTML Report)"]:::actuator
+        UserInbox["📬 User Email Inbox<br/>(SMTP Transmission)"]:::actuator
     end
 
     %% --- CONNECTIONS ---
     Local_Cron --> Orchestrator
     Local_CLI --> Orchestrator
+    User_Feed -->|Manual YAML updates| MemoryStore
     
     %% Config & Guard checks
     Orchestrator --> ConfigLoader
     Orchestrator --> BudgetCtrl
+    
+    %% State initialization checks
+    Orchestrator -.->|Load historical seen IDs| SeenStore
+    Orchestrator -.->|Load user preferences| MemoryStore
     
     %% Perception flow
     Orchestrator --> Perception_Start["Start Discovery"]
@@ -86,10 +94,14 @@ graph TB
     
     %% Report & Delivery
     LLM_Ranker --> ReportGen
-    ReportGen --> MailSender
+    ReportGen --> DeliveryRouter
+    
+    %% Delivery Routing (Browser or SMTP)
+    DeliveryRouter -->|webbrowser.open| Dashboard
+    DeliveryRouter -->|smtplib secure send| UserInbox
     
     %% Delivery confirmed sequence
-    MailSender -->|Success: Save state| SeenStore
+    DeliveryRouter -->|Success: Save state| SeenStore
 ```
 
 ---
@@ -112,9 +124,10 @@ This project implements the industry-standard **Autonomous AI Agent Architecture
 *   **Pydantic Config Validator:** Fails fast on start if `config.yaml` values are invalid.
 *   **Search Budget Tracker:** Stops making web searches if the `max_search_calls` safety cap is breached to prevent API runaway bills.
 *   **Cold-Start Bounding:** Caps lookbacks to 48 hours when the run state is empty to prevent fetching massive historical search results.
-*   **State-Commit Sequence:** Writes to `seen_items.yaml` only after confirmed email delivery to avoid silently dropping updates on delivery failure.
+*   **State-Commit Sequence:** Writes to `seen_items.yaml` only after confirmed email/dashboard delivery to avoid silently dropping updates on delivery failure.
 
 ### D. Action Layer (Actuators)
 *   **Seen Store & Preference Memory:** Lightweight YAML state files stored locally on the host machine.
 *   **Report Generator:** Formats primary featured updates and folds overflow items into a collapsed section to avoid information fatigue.
+*   **Delivery Router:** Directs the generated HTML report to open automatically in your local web browser, or routes it via SMTP to your configured email inbox depending on your SMTP setup.
 *   **Local Preference State Loop:** Loads user thumbs-up/down preferences from `preference_memory.yaml` to adjust rankings on subsequent pipeline runs.
