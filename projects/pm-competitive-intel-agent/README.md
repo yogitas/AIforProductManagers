@@ -27,8 +27,8 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 *   **Trade-off & Rationale:** The LLM model is configured via a single line in `config.yaml` (e.g. `llm_model: "ollama/llama3.1"`). A PM or developer can swap in commercial cloud APIs (Gemini, Claude, OpenAI) or other local open-weights models in seconds. By avoiding proprietary vendor SDKs, we future-proof our core intelligence pipeline and prevent vendor lock-in.
 
 ### B. Keyless Local Search vs. Commercial Grounding APIs
-*   **Decision:** We use a keyless, local scraper targeting DuckDuckGo's HTML search interface for competitor discovery.
-*   **Trade-off & Rationale:** Commercial search grounding APIs (like Google or Bing) require credit card registrations, billing configurations, and paid API keys, creating a significant barrier to setup. To ensure a zero-barrier, private, and cost-free setup for PMs, developers, and testers, we choose a local HTML scraper. It runs completely free, requires zero credentials, and retrieves high-quality snippet text for competitor names out of the box.
+*   **Decision:** We use a custom, keyless local scraper targeting DuckDuckGo's raw HTML interface for competitor discovery.
+*   **Trade-off & Rationale:** Commercial search grounding APIs (like Google or Bing) require credit card registrations, billing configurations, and paid API keys, creating a significant barrier to setup. Even open-source search library wrappers frequently trigger bot rate-limiting. To ensure a zero-barrier, private, and cost-free setup for PMs, developers, and testers, we built a raw HTML requests-based scraper. It runs completely free, requires zero credentials, and retrieves high-quality snippet text out of the box. *Trade-off:* While this is 100% free and has zero external package dependencies, future structural updates to DuckDuckGo's HTML could require minor parser updates.
 
 ### C. Frameworks (LangChain/CrewAI) vs. Focused Libraries
 *   **Decision:** We chose **not** to use heavy agent frameworks (LangChain agents, CrewAI, AutoGen). Instead, we orchestrate the pipeline using standard Python, Pydantic, and Tenacity.
@@ -50,11 +50,13 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
     *   *Try/Except Isolation:* Wraps each crawler and search loop individually so that a timeout on one competitor site does not crash the entire pipeline run.
     *   *Grounding URL check:* Automatically drops items that lack verifiable source URLs before they reach the LLM.
     *   *Commit Sequencing:* Commits seen hashes to `seen_items.yaml` only *after* email delivery is verified as successful, ensuring no updates are lost in transit.
+    *   *Inference Timeout Protection:* Injects a `timeout=30` parameter into all LiteLLM completion queries, preventing the local Python process from freezing indefinitely if the local Ollama model server experiences latency or hangs.
+    *   *Format-Resilient Parsing Fallback:* Automatically detects and wraps single JSON dict objects `{}` returned by local models (which sometimes ignore array instructions in prompts) into standard JSON lists `[{}]` to prevent format-related classification drops.
     *   *Rate Limit Sleeper:* Includes a 5-second delay between sequential search queries to comply with search engine rate limits and prevent IP blocks.
 
 ### G. Automated Prompt Evaluation (Evals Suite)
-*   **Decision:** We use the open-source **Promptfoo** library to test prompt accuracy against a hand-labeled "golden set" of 17 test cases, integrated directly into GitHub Actions.
-*   **Trade-off & Rationale:** Hand-testing prompts on every change is slow and subjective. Instead, promptfoo runs our exact same relevance prompt file (`src/prompts/materiality_prompt.txt`) using a custom test provider (`evals/provider.py`) to verify that the classification outputs conform to schemas and expected labels. This is integrated into GHA CI (`.github/workflows/ci.yml`) to automatically catch prompt regressions on every push.
+*   **Decision:** We use the open-source **Promptfoo** library to test prompt accuracy against a hand-labeled "golden set" of 17 test cases, which can be run locally or integrated into GitHub Actions CI.
+*   **Trade-off & Rationale:** Hand-testing prompts on every change is slow and subjective. Instead, promptfoo runs our exact same relevance prompt file (`src/prompts/materiality_prompt.txt`) using a custom test provider (`evals/provider.py`) to verify that the classification outputs conform to schemas and expected labels. This can be integrated into GHA CI (`.github/workflows/ci.yml`) to automatically catch prompt regressions on repository pushes.
 *   **What "Proper Behavior" Looks Like (Our Evaluation Focus):**
     For this agent to remain valuable and function reliably in a production environment, it must meet two key quality criteria, which we actively target and verify through our evaluations:
     *   *1. Crash-Free Output Parsing:* Since the agent crawls unstructured data from various sources across the web, we must ensure that the model output consistently conforms to the structured layout required by our parsing engine. This prevents system crashes and guarantees the reader always receives a clean, readable, and well-formatted digest.
@@ -70,7 +72,7 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 *   **Relevance Filtering:** Classifies discovered items as "important" (launches, pricing, leadership, M&A) vs. "noise" (bug fixes, general marketing) via an LLM classification step.
 *   **Preference-Weighted Ranking:** Re-orders the daily digest utilizing a historical preference summary block in the prompt.
 *   **Daily Digest Generation:** Emails a markdown and HTML report grouped by competitor with source URLs.
-*   **Lightweight Feedback Loop:** Includes pre-filled GitHub issue creation links for each item (Thumbs Up/Down with reasons like "already knew this") which are parsed and recorded automatically.
+*   **Lightweight Feedback Loop:** Customizes rankings dynamically based on your likes/dislikes recorded in the local preference memory state file.
 
 ---
 
@@ -89,8 +91,8 @@ To maintain a lean codebase, the following features were deliberately deferred f
 
 ## 5. Known Limitations
 
-*   **GHA Schedule Delay:** GitHub Actions scheduled workflows (cron triggers) can be delayed or silently disabled after 60 days of repository inactivity. To mitigate this, a `workflow_dispatch` trigger is included for manual execution.
-*   **Schedule Syncing:** The `schedule.time` in `config.yaml` and the GHA cron expression in `.github/workflows/daily_run.yml` are not auto-synced. They must be aligned by hand.
+*   **Local Scheduling:** Running the agent on a schedule requires a local task scheduler (such as macOS `launchd` or Linux `cron`) configured on the host machine.
+*   **Local Host Dependency:** Since the agent runs locally, the host machine must be turned on and connected to the internet during the scheduled execution window for DDG search query scraping to complete.
 
 ---
 

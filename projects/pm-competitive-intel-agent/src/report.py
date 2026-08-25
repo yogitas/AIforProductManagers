@@ -1,53 +1,10 @@
 """
 Formats the competitive intelligence daily digest into markdown and HTML formats.
-Includes feedback links formatted as URL-encoded GitHub issue creations.
+Includes structured formatting grouped by competitor.
 """
 import os
-import urllib.parse
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
-
-def generate_feedback_urls(item: Dict[str, Any]) -> Tuple[str, str]:
-    """
-    Generates URL-encoded issue creation links for thumbs-up/down feedback.
-    Reads repo name from GITHUB_REPOSITORY environment variable.
-    """
-    repo = os.environ.get("GITHUB_REPOSITORY", "your-github-username/AIforProductManagers")
-    base_url = f"https://github.com/{repo}/issues/new"
-    
-    # Template body for useful feedback
-    useful_body = (
-        f"Reviewing update: \"{item['title']}\" from competitor \"{item['competitor']}\".\n"
-        f"URL: {item['url']}\n\n"
-        f"Why was this useful? (Put [x] in the box):\n"
-        f"- [ ] highly relevant to my focus subdomain\n"
-        f"- [ ] contains critical news I didn't know yet\n"
-        f"- [ ] pricing/packaging update of interest\n"
-        f"- [ ] other:"
-    )
-    useful_query = urllib.parse.urlencode({
-        "title": f"feedback:{item['id']}:useful",
-        "body": useful_body
-    })
-    useful_url = f"{base_url}?{useful_query}"
-    
-    # Template body for not-useful feedback
-    not_useful_body = (
-        f"Reviewing update: \"{item['title']}\" from competitor \"{item['competitor']}\".\n"
-        f"URL: {item['url']}\n\n"
-        f"Why was this not useful? (Put [x] in the box):\n"
-        f"- [ ] not relevant to my focus subdomain\n"
-        f"- [ ] already knew this\n"
-        f"- [ ] too noisy / not material\n"
-        f"- [ ] other:"
-    )
-    not_useful_query = urllib.parse.urlencode({
-        "title": f"feedback:{item['id']}:not-useful",
-        "body": not_useful_body
-    })
-    not_useful_url = f"{base_url}?{not_useful_query}"
-    
-    return useful_url, not_useful_url
 
 def generate_markdown_report(
     featured_items: List[Dict[str, Any]],
@@ -103,13 +60,11 @@ def generate_markdown_report(
         md.append(f"### {competitor}")
         for item in items:
             focus_badge = "⭐ **[FOCUS SUBDOMAIN]** " if item.get("is_focus") else ""
-            useful_url, not_useful_url = generate_feedback_urls(item)
             
             md.append(f"#### {focus_badge}{item['title']}")
             md.append(f"- **Summary:** {item['description']}")
             md.append(f"- **Source:** [Read Full Article]({item['url']})")
             md.append(f"- **Materiality Reason:** *{item.get('materiality_reason', 'N/A')}*")
-            md.append(f"- **Feedback:** [👍 Useful]({useful_url}) | [👎 Not Useful]({not_useful_url})")
             md.append("")
             
     # GUARDRAIL: Report size cap
@@ -121,10 +76,8 @@ def generate_markdown_report(
         md.append("")
         
         for item in extra_items:
-            useful_url, not_useful_url = generate_feedback_urls(item)
-            focus_badge = "⭐ " if item.get("is_focus") else ""
-            md.append(f"- **{focus_badge}{item['competitor']}**: [{item['title']}]({item['url']}) - {item['description']}")
-            md.append(f"  * [👍 Useful]({useful_url}) | [👎 Not Useful]({not_useful_url})")
+            focus_star = "⭐ " if item.get("is_focus") else ""
+            md.append(f"- **{focus_star}{item['competitor']}**: [{item['title']}]({item['url']}) - {item['description']}")
             
     # Add active preference memory summary for visibility
     md.append("\n---")
@@ -219,7 +172,6 @@ def generate_html_report(
             is_focus = item.get("is_focus", False)
             focus_class = "focus" if is_focus else ""
             badge = '<span class="badge">⭐ Focus Subdomain</span><br/>' if is_focus else ""
-            useful_url, not_useful_url = generate_feedback_urls(item)
             
             body_content += f"""
             <div class="item {focus_class}">
@@ -228,10 +180,6 @@ def generate_html_report(
               <p style="margin: 5px 0;">{item['description']}</p>
               <small><strong>Source:</strong> <a href="{item['url']}">{item['url']}</a><br/>
               <strong>Materiality Reason:</strong> <em>{item.get('materiality_reason', 'N/A')}</em></small>
-              <div class="feedback">
-                <a href="{useful_url}">👍 Useful</a>
-                <a href="{not_useful_url}">👎 Not Useful</a>
-              </div>
             </div>
             """
             
@@ -239,15 +187,10 @@ def generate_html_report(
     if extra_items:
         extra_content = f"<h2>Extra Updates (+{len(extra_items)} more items)</h2><ul>"
         for item in extra_items:
-            useful_url, not_useful_url = generate_feedback_urls(item)
             focus_star = "⭐ " if item.get("is_focus") else ""
             extra_content += f"""
             <li style="margin-bottom: 10px;">
               <strong>{focus_star}{item['competitor']}</strong>: <a href="{item['url']}">{item['title']}</a> - {item['description']}<br/>
-              <small class="feedback">
-                <a href="{useful_url}">👍 Useful</a>
-                <a href="{not_useful_url}">👎 Not Useful</a>
-              </small>
             </li>
             """
         extra_content += "</ul>"

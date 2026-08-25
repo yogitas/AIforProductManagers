@@ -19,10 +19,9 @@ graph TB
     classDef guard fill:#F3E8FD,stroke:#8430E8,stroke-width:2px,color:#000;
 
     %% --- TRIGGER LAYER ---
-    subgraph Trigger Layer [Triggers / Actions]
-        GHA_Cron["🕒 GitHub Actions daily_run.yml<br/>(Daily Cron Schedule)"]:::trigger
-        GHA_Manual["🖱️ GHA Workflow Dispatch<br/>(Manual Trigger)"]:::trigger
-        GHA_Feedback["💬 GHA process_feedback.yml<br/>(GitHub Issue Opened)"]:::trigger
+    subgraph Trigger Layer [Local Triggers / Actions]
+        Local_Cron["🕒 macOS launchd / Linux cron<br/>(Local Scheduled Run)"]:::trigger
+        Local_CLI["💻 Local Terminal Command<br/>(Manual Trigger)"]:::trigger
     end
 
     %% --- AGENT CONTROL & PERCEPTION ---
@@ -32,7 +31,7 @@ graph TB
         BudgetCtrl["🛡️ Call Budget Manager<br/>(budget.py Limit Tracker)"]:::guard
         
         subgraph Perception Sensors
-            GroundingTool["🔍 Gemini Search Grounding<br/>(google-genai SDK)"]:::sensor
+            SearchScraper["🔍 DDG HTML Search Scraper<br/>(Keyless Requests)"]:::sensor
             Crawler["🕸️ Web Crawler<br/>(BeautifulSoup + robots.txt check)"]:::sensor
         end
     end
@@ -53,12 +52,12 @@ graph TB
     %% --- ACTUATORS ---
     subgraph Actuators [Action Delivery]
         ReportGen["📝 Report Formatter<br/>(report.py MD/HTML)"]:::actuator
-        MailSender["📧 Email Delivery<br/>(deliver.py + smtplib / GHA)"]:::actuator
+        MailSender["📧 Email / Browser Open<br/>(deliver.py + SMTP / webbrowser)"]:::actuator
     end
 
     %% --- CONNECTIONS ---
-    GHA_Cron --> Orchestrator
-    GHA_Manual --> Orchestrator
+    Local_Cron --> Orchestrator
+    Local_CLI --> Orchestrator
     
     %% Config & Guard checks
     Orchestrator --> ConfigLoader
@@ -66,14 +65,14 @@ graph TB
     
     %% Perception flow
     Orchestrator --> Perception_Start["Start Discovery"]
-    Perception_Start --> GroundingTool
+    Perception_Start --> SearchScraper
     Perception_Start --> Crawler
     
     %% Quota guard checked
-    BudgetCtrl -.->|Checks limits| GroundingTool
+    BudgetCtrl -.->|Checks limits| SearchScraper
     
     %% Data -> Brain
-    GroundingTool --> LLM_Extract
+    SearchScraper --> LLM_Extract
     Crawler --> LLM_Extract
     
     %% Deduplication & Classification
@@ -91,10 +90,6 @@ graph TB
     
     %% Delivery confirmed sequence
     MailSender -->|Success: Save state| SeenStore
-    
-    %% Feedback Loop
-    GHA_Feedback --> FeedbackScript["🔧 process_feedback.py"]:::actuator
-    FeedbackScript -->|Append check logs| MemoryStore
 ```
 
 ---
@@ -104,22 +99,22 @@ graph TB
 This project implements the industry-standard **Autonomous AI Agent Architecture** divided into four clean boundaries:
 
 ### A. Perception Layer (Sensors)
-*   **Google Search Grounding:** Queries the live web directly using Gemini's search capabilities to discover news, partnerships, and product launches within a timezone-bounded calendar window.
+*   **DuckDuckGo Search Scraper:** Queries the live web directly using DuckDuckGo's raw HTML interface to discover news, partnerships, and product launches within a timezone-bounded calendar window.
 *   **Web Crawler:** Safely crawls custom source links by checking `robots.txt` permissions and extracting clean paragraph blocks, ensuring copyright compliance.
 
 ### B. Cognitive Engine (The Brain)
-*   **Model Agnostic Abstractor:** decodes messages using `litellm`. Swap models in `config.yaml` without changing logic.
-*   **Structured Parsing Agent:** extracts JSON lists of individual competitor items from raw unstructured search grounding blocks.
-*   **Materiality Filter:** evaluates updates against a verbatim business rubric, suppressing noise (such as general thought-leadership or bugfixes) at a strict, deterministic temperature of `0.0`.
-*   **Preference-Weighted Ranker:** summarizes user likes and dislikes as in-context prompt parameters to prioritize and sort updates, promoting the `focus_subdomain` matches to the top.
+*   **Model Agnostic Abstractor:** Decodes messages using `litellm`. Swap models in `config.yaml` without changing logic.
+*   **Structured Parsing Agent:** Extracts JSON lists of individual competitor items from raw unstructured search grounding blocks.
+*   **Materiality Filter:** Evaluates updates against a verbatim business rubric, suppressing noise (such as general thought-leadership or bugfixes) at a strict, deterministic temperature of `0.0`.
+*   **Preference-Weighted Ranker:** Summarizes user likes and dislikes as in-context prompt parameters to prioritize and sort updates, promoting the `focus_subdomain` matches to the top.
 
 ### C. Safety Guardrails (Control Systems)
-*   **Pydantic Config Validator:** fails fast on start if `config.yaml` values are invalid.
-*   **Search Budget Tracker:** stops making web searches if the `max_search_calls` safety cap is breached to prevent API runaway bills.
-*   **Cold-Start Bounding:** caps lookbacks to 48 hours when the run state is empty to prevent fetching massive historical search results.
-*   **State-Commit Sequence:** writes to `seen_items.yaml` only after confirmed email delivery to avoid silently dropping updates on delivery failure.
+*   **Pydantic Config Validator:** Fails fast on start if `config.yaml` values are invalid.
+*   **Search Budget Tracker:** Stops making web searches if the `max_search_calls` safety cap is breached to prevent API runaway bills.
+*   **Cold-Start Bounding:** Caps lookbacks to 48 hours when the run state is empty to prevent fetching massive historical search results.
+*   **State-Commit Sequence:** Writes to `seen_items.yaml` only after confirmed email delivery to avoid silently dropping updates on delivery failure.
 
 ### D. Action Layer (Actuators)
-*   **Seen Store & Preference Memory:** lightweight YAML state files committed back to git by the cron workflow.
-*   **Report Generator:** formats primary featured updates and folds overflow items into a collapsed section to avoid information fatigue.
-*   **GitHub Feedback Loop:** process issue titles (`feedback:{item_id}:useful`) opened by the user, updates memory, and automatically closes the issue.
+*   **Seen Store & Preference Memory:** Lightweight YAML state files stored locally on the host machine.
+*   **Report Generator:** Formats primary featured updates and folds overflow items into a collapsed section to avoid information fatigue.
+*   **Local Preference State Loop:** Loads user thumbs-up/down preferences from `preference_memory.yaml` to adjust rankings on subsequent pipeline runs.
