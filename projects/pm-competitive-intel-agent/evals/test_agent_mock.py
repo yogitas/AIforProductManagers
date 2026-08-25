@@ -64,23 +64,31 @@ def dynamic_litellm_mock(model, messages, **kwargs):
     # Default fallback
     return mock_materiality_completion
 
-@patch("google.genai.Client")
+def dynamic_get_mock(url, *args, **kwargs):
+    """
+    Dynamically mocks network requests.
+    Returns valid HTML snippets for DDG search results, and 404 for crawl checks.
+    """
+    mock_response = MagicMock()
+    if "duckduckgo.com" in url:
+        mock_response.status_code = 200
+        mock_response.text = """
+        <div class="result">
+            <a class="result__a" href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fexample.com%2Fomniport">OmniPort Universal Charger Launch</a>
+            <a class="result__snippet">ChargePoint announced the universal OmniPort charger today.</a>
+        </div>
+        """
+    else:
+        mock_response.status_code = 404
+    return mock_response
+
 @patch("litellm.completion")
 @patch("requests.get")
-def run_mock_verification_test(mock_get, mock_litellm, mock_genai_client):
+def run_mock_verification_test(mock_get, mock_litellm):
     print("Initializing mock objects...")
     
-    # 1. Mock the Google GenAI Client
-    mock_client_instance = MagicMock()
-    mock_client_instance.models.generate_content.return_value = mock_search_response
-    mock_genai_client.return_value = mock_client_instance
-    
-    # 2. Mock requests.get for robots.txt files (returning 404 so we bypass checking)
-    mock_response = MagicMock()
-    mock_response.status_code = 404
-    mock_get.return_value = mock_response
-    
-    # 3. Apply the dynamic side-effect to LiteLLM completion mock
+    # 1. Apply the dynamic side-effects to request and LLM mocks
+    mock_get.side_effect = dynamic_get_mock
     mock_litellm.side_effect = dynamic_litellm_mock
     
     # Map required environment variables for mock run

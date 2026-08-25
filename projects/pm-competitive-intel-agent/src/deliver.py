@@ -49,6 +49,17 @@ def deliver_report(
         print(f"Subject: {subject}")
         print(f"Featured Updates Count: {markdown_content.count('####')}")
         print(f"---------------------------------\n")
+        
+        # If running locally, also open the HTML dashboard
+        if not os.environ.get("GITHUB_ACTIONS"):
+            import webbrowser
+            try:
+                absolute_html_path = os.path.abspath(html_path)
+                webbrowser.open(f"file://{absolute_html_path}")
+                logger.info(f"Local session: opened HTML report dashboard in browser: {absolute_html_path}")
+            except Exception as e:
+                logger.warning(f"Could not open browser automatically: {e}")
+                
         return True
 
     # 2. Save latest files on disk anyway (for GHA step upload or mail action support)
@@ -76,6 +87,16 @@ def deliver_report(
             "SMTP credentials not found in environment. Email delivery is delegated "
             "to the subsequent GitHub Action workflow step."
         )
+        # If running locally, also open the HTML dashboard
+        if not os.environ.get("GITHUB_ACTIONS"):
+            import webbrowser
+            try:
+                absolute_html_path = os.path.abspath(html_path)
+                webbrowser.open(f"file://{absolute_html_path}")
+                logger.info(f"Local session: opened HTML report dashboard in browser: {absolute_html_path}")
+            except Exception as e:
+                logger.warning(f"Could not open browser automatically: {e}")
+                
         return True
         
     smtp_server = os.environ.get("SMTP_SERVER", "smtp.gmail.com")
@@ -108,6 +129,17 @@ def deliver_report(
         server.sendmail(smtp_user, to_email, msg.as_string())
         server.quit()
         logger.info("Email delivered successfully via SMTP.")
+        
+        # If running locally, also open the HTML dashboard
+        if not os.environ.get("GITHUB_ACTIONS"):
+            import webbrowser
+            try:
+                absolute_html_path = os.path.abspath(html_path)
+                webbrowser.open(f"file://{absolute_html_path}")
+                logger.info(f"Local session: opened HTML report dashboard in browser: {absolute_html_path}")
+            except Exception as e:
+                logger.warning(f"Could not open browser automatically: {e}")
+                
         return True
     except Exception as e:
         logger.exception(f"Failed to deliver email via SMTP: {e}")

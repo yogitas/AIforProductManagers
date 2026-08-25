@@ -1,6 +1,7 @@
 # Litellm provider-prefixed model string.
 # Swap to "anthropic/claude-...", "openai/gpt-...", etc. to change LLM providers.
-llm_model: "gemini/gemini-3.6-flash"
+llm_model: "ollama/llama3.1"
+
 
 domain:
   # The high-level industry or technology domain of interest.

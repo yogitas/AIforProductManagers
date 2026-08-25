@@ -49,9 +49,9 @@ class BudgetTracker:
         """
         Calculates estimated cost of execution in USD.
         Pricing model used:
-        - Gemini 3.6 Flash Input: $0.075 / 1,000,000 tokens
-        - Gemini 3.6 Flash Output: $0.30 / 1,000,000 tokens
-        - Search Grounding Calls: $0.014 / call (excluding first 5,000 monthly free tier allowance)
+        - Lightweight LLM Input: $0.075 / 1,000,000 tokens
+        - Lightweight LLM Output: $0.30 / 1,000,000 tokens
+        - Search Queries: $0.014 / call (standard API valuation)
         """
         token_input_cost = (self.input_tokens / 1_000_000) * 0.075
         token_output_cost = (self.output_tokens / 1_000_000) * 0.30

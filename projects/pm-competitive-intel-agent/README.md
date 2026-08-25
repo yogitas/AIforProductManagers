@@ -24,11 +24,11 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 
 ### A. LLM Provider-Agnosticism vs. Vendor Lock-in
 *   **Decision:** We use **`litellm`** as our LLM invocation layer.
-*   **Trade-off & Rationale:** The LLM model is configured via a single line in `config.yaml` (e.g. `llm_model: "gemini/gemini-3.6-flash"`). A PM or developer can swap in Claude, OpenAI, or local open-weights models (Ollama) in seconds. By avoiding proprietary vendor SDKs, we future-proof our core intelligence pipeline and prevent vendor lock-in.
+*   **Trade-off & Rationale:** The LLM model is configured via a single line in `config.yaml` (e.g. `llm_model: "ollama/llama3.1"`). A PM or developer can swap in commercial cloud APIs (Gemini, Claude, OpenAI) or other local open-weights models in seconds. By avoiding proprietary vendor SDKs, we future-proof our core intelligence pipeline and prevent vendor lock-in.
 
-### B. Coupled Search Grounding vs. Open-Source Wrappers
-*   **Decision:** We couple the *discovery phase* directly to Gemini's native `google_search` grounding tool via the `google-genai` SDK.
-*   **Trade-off & Rationale:** Search grounding requires Google AI Studio billing enabled (offering 5,000 free search queries/month). We chose this over custom scrapers or generic search wrappers because Google's native grounding is free, high-quality, and handles crawling latency. The discovery phase is coupled to Google, but downstream classification and ranking remain completely provider-agnostic.
+### B. Keyless Local Search vs. Commercial Grounding APIs
+*   **Decision:** We use a keyless, local scraper targeting DuckDuckGo's HTML search interface for competitor discovery.
+*   **Trade-off & Rationale:** Commercial search grounding APIs (like Google or Bing) require credit card registrations, billing configurations, and paid API keys, creating a significant barrier to setup. To ensure a zero-barrier, private, and cost-free setup for PMs, developers, and testers, we choose a local HTML scraper. It runs completely free, requires zero credentials, and retrieves high-quality snippet text for competitor names out of the box.
 
 ### C. Frameworks (LangChain/CrewAI) vs. Focused Libraries
 *   **Decision:** We chose **not** to use heavy agent frameworks (LangChain agents, CrewAI, AutoGen). Instead, we orchestrate the pipeline using standard Python, Pydantic, and Tenacity.
@@ -46,11 +46,11 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 *   **Decision:** We built robust software constraints to protect the pipeline against cost runaway, data loss, and API rate limits.
 *   **Trade-off & Rationale:**
     *   *Cold-Start Bounding:* Caps search lookbacks to 48 hours when state files are empty, preventing huge token and search quota consumption on the first run.
-    *   *Call Budget Tracker & COGS Reporting:* Automatically stops discovery once `max_search_calls` is breached to prevent loop runaway costs. Additionally, it intercepts all LiteLLM completion responses to track total input/output tokens and calculate/log the estimated run cost (using Gemini Flash rates) at the end of every execution. This treats API usage as a measurable operational cost (COGS), which is crucial for managing real product profitability.
+    *   *Call Budget Tracker & COGS Reporting:* Automatically stops discovery once `max_search_calls` is breached to prevent loop runaway costs. Additionally, it intercepts all LiteLLM completion responses to track total input/output tokens and calculate/log the estimated run cost (based on configured token rates) at the end of every execution. This treats API usage as a measurable operational cost (COGS), which is crucial for managing real product profitability.
     *   *Try/Except Isolation:* Wraps each crawler and search loop individually so that a timeout on one competitor site does not crash the entire pipeline run.
     *   *Grounding URL check:* Automatically drops items that lack verifiable source URLs before they reach the LLM.
     *   *Commit Sequencing:* Commits seen hashes to `seen_items.yaml` only *after* email delivery is verified as successful, ensuring no updates are lost in transit.
-    *   *Rate Limit Sleeper:* Includes a 5-second delay between sequential search grounding requests to comply with Google Search API rate limits.
+    *   *Rate Limit Sleeper:* Includes a 5-second delay between sequential search queries to comply with search engine rate limits and prevent IP blocks.
 
 ### G. Automated Prompt Evaluation (Evals Suite)
 *   **Decision:** We use the open-source **Promptfoo** library to test prompt accuracy against a hand-labeled "golden set" of 17 test cases, integrated directly into GitHub Actions.
@@ -65,7 +65,7 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 ## 3. What v1 / MVP Does
 
 *   **Configured Tracking:** Monitors primary industry domains, named competitors, and focus sub-domains (which get flagged with a ⭐).
-*   **Search & Crawl Discovery:** Queries Google Search grounding via Gemini to discover updates, and crawls custom competitor blogs (checking `robots.txt` beforehand).
+*   **Search & Crawl Discovery:** Queries DuckDuckGo HTML search locally to discover updates, and crawls custom competitor blogs (checking `robots.txt` beforehand).
 *   **Deduplication:** Automatically hashes URLs or titles to prevent reporting items discovered in prior executions.
 *   **Relevance Filtering:** Classifies discovered items as "important" (launches, pricing, leadership, M&A) vs. "noise" (bug fixes, general marketing) via an LLM classification step.
 *   **Preference-Weighted Ranking:** Re-orders the daily digest utilizing a historical preference summary block in the prompt.
@@ -98,17 +98,19 @@ To maintain a lean codebase, the following features were deliberately deferred f
 
 You do not need to wait for a daily cron to iterate. The agent supports flags to run safely and repeatedly:
 
-### 1. Configure Credentials
-Create a local `.env` file in the project folder and paste your Gemini API key:
+### 1. Configure Credentials (Optional)
+If running locally using **Ollama**, no credentials or API keys are required! 
+
+If you prefer to run a commercial cloud model (e.g. Gemini, OpenAI, Claude), create a local `.env` file and define `LLM_API_KEY`:
 ```env
-LLM_API_KEY="AIzaSyYourGeminiAPIKeyHere"
+LLM_API_KEY="your-api-key-here"
 ```
 
 ### 2. Execute Local Test Runs
 ```bash
 # SCRIPT LOCATION: Run from projects/pm-competitive-intel-agent/
 
-# A. Test Mode (Fastest iteration: resets seen/memory state to a backup, runs dry-run)
+# A. Test Mode (Simulates run, prints cost, and automatically opens the HTML dashboard in your browser)
 ../../.venv/bin/python src/run_agent.py --test-mode
 
 # B. Dry Run (Simulates run against existing state, writes outputs to state/, skips email and git commit)
@@ -133,17 +135,20 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 2: Configure Your API Key & SMTP Settings
-Copy the template `.env.example` to a new file named `.env`:
-```bash
-cp .env.example .env
-```
-Open `.env` and fill in your details:
-1.  **`LLM_API_KEY`**: Paste your Google Gemini API key. *Note: Using Google Search Grounding requires billing to be enabled on your Google AI Studio project, but provides 5,000 free searches monthly.*
-2.  **SMTP Variables (Optional)**: If you want reports delivered to your inbox instead of printing to the console, uncomment and configure:
-    *   `SMTP_USERNAME`: Your sender email address.
-    *   `SMTP_PASSWORD`: Your 16-character App Password (generated in Google Account Security).
-    *   `REPORT_TO_EMAIL`: The recipient email address.
+### Step 2: Configure Your API Key & SMTP Settings (Optional)
+If you are running the agent locally using **Ollama**, you do not need any LLM API keys! Simply ensure Ollama is running (`ollama serve`) and the model is pulled (`ollama pull llama3.1`).
+
+If you prefer to run a commercial cloud model (e.g. Gemini, GPT, Claude):
+1.  Copy the template `.env.example` to a new file named `.env`:
+    ```bash
+    cp .env.example .env
+    ```
+2.  Open `.env` and fill in your details:
+    *   **`LLM_API_KEY`**: Paste your provider's API key.
+    *   **SMTP Variables (Optional)**: If you want reports delivered to your inbox instead of auto-opening in your browser:
+        *   `SMTP_USERNAME`: Your sender email address.
+        *   `SMTP_PASSWORD`: Your 16-character App Password (generated in Google Account Security).
+        *   `REPORT_TO_EMAIL`: The recipient email address.
 
 ### Step 3: Customize Targeting in `config.yaml`
 Open [`config.yaml`](config.yaml) and customize it for your product domain:
@@ -152,11 +157,17 @@ Open [`config.yaml`](config.yaml) and customize it for your product domain:
 3.  **`watchlist`**: Define industry publications, awards, or conferences (like *"Gartner"*, *"CES"*) to watch.
 4.  **`schedule`**: Adjust the delivery time and timezone.
 
-### Step 4: Run the Agent
+### Step 4: Run the Agent & View Results
 Execute the main orchestrator script locally in test mode. This simulates the run, checks the web, prints the cost analysis, and writes the output reports to `state/` without committing state or sending emails:
 ```bash
 python src/run_agent.py --test-mode
 ```
+*   **Where to see the results:**
+    *   **Auto-Open Dashboard:** On local desktop runs, your default web browser will automatically open to display the formatted HTML report dashboard.
+    *   **Generated Files:** The outputs are written directly to your workspace:
+        *   HTML Dashboard: [`state/latest_report.html`](state/latest_report.html)
+        *   Markdown Digest: [`state/latest_report.md`](state/latest_report.md)
+
 Once you are ready to persist states and send the daily digest report to your email, run:
 ```bash
 python src/run_agent.py

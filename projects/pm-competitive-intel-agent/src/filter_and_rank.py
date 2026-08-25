@@ -79,7 +79,8 @@ def check_materiality_with_llm(
         messages=[{"role": "user", "content": prompt}],
         api_key=api_key,
         temperature=0.0,  # Temperature 0.0 for deterministic classification in production/evals
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"},
+        timeout=30
     )
     
     if budget_tracker and hasattr(response, "usage") and response.usage:
@@ -207,7 +208,8 @@ def run_llm_ranking(
         messages=[{"role": "user", "content": prompt}],
         api_key=api_key,
         temperature=0.1,
-        response_format={"type": "json_object"}
+        response_format={"type": "json_object"},
+        timeout=30
     )
     
     if budget_tracker and hasattr(response, "usage") and response.usage:

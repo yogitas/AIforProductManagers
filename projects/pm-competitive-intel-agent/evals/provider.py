@@ -18,11 +18,10 @@ def call_api(prompt, options, context):
     options: Config parameters passed from the promptfoo yaml file.
     context: Test case details.
     """
-    # Load model from environment, default to our default Gemini model
-    model = os.environ.get("LLM_MODEL", "gemini/gemini-2.5-flash")
+    model = os.environ.get("LLM_MODEL", "ollama/llama3.1")
     api_key = os.environ.get("LLM_API_KEY")
     
-    if not api_key:
+    if not api_key and not model.startswith("ollama"):
         return {
             "error": "LLM_API_KEY environment variable is not set. Evals require a valid key."
         }
@@ -33,7 +32,8 @@ def call_api(prompt, options, context):
             messages=[{"role": "user", "content": prompt}],
             api_key=api_key,
             temperature=0.0,  # 0.0 temperature ensures tests are deterministic
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
+            timeout=30
         )
         output = response.choices[0].message.content or ""
         return {
