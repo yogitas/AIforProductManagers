@@ -26,7 +26,7 @@ This repository is a collection of hands-on reference tutorials created as I lea
 
 | Project | Concept | Tech Stack | Link |
 | :--- | :--- | :--- | :--- |
-| **Competitive Intel Agent** | Automated news collector & ranker | Gemini Grounding, LiteLLM, COGS Tracking, Few-Shots | [Setup Guide](projects/pm-competitive-intel-agent#7-how-to-configure-this-agent-for-yourself) |
+| **Competitive Intel Agent** | Automated news collector & ranker | Ollama/Local DDG, LiteLLM, COGS Tracking, Few-Shots | [Setup Guide](projects/pm-competitive-intel-agent#7-how-to-configure-this-agent-for-yourself) |
 | **PM Copilot RAG Search** | Jira docs question-answering assistant | Scratch vs. LangChain, Ollama, ChromaDB, Evals | [Setup Guide](projects/pm-rag-copilot#8-how-to-configure-this-agent-for-yourself) |
 
 ---

@@ -35,8 +35,8 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
 *   **Trade-off & Rationale:** Frameworks add layers of abstraction that obscure runtime errors and increase latency. Because the pipeline is a linear sequence of 5 steps, a framework adds abstraction without adding capability. Furthermore, since a primary goal of this repository is to teach how AI agents actually work under the hood, building the orchestration with plain Python, Pydantic, and LiteLLM exposes the mechanics of each step clearly, rather than hiding this key educational complexity behind high-level framework wrappers. Instead, we use focused, single-purpose open-source libraries: `pydantic` for config schema validation on startup, and `tenacity` for exponential backoff retries on network calls.
 
 ### D. File-Based State Store vs. Dedicated Databases
-*   **Decision:** Seen item hashes and user preference logs are stored in PyYAML files (`seen_items.yaml`, `preference_memory.yaml`) committed back to Git.
-*   **Trade-off & Rationale:** Hosting and managing a database (PostgreSQL, Redis) introduces infrastructure cost and maintenance. A file-based Git store keeps the agent serverless, lightweight, and deployment-friendly inside GitHub Actions.
+*   **Decision:** Seen item hashes and user preference logs are stored locally in PyYAML files (`seen_items.yaml`, `preference_memory.yaml`).
+*   **Trade-off & Rationale:** Hosting and managing a database (PostgreSQL, Redis) introduces infrastructure cost and maintenance. A file-based local store keeps the agent lightweight, simple, and self-contained on the host machine.
 
 ### E. In-Context Preference Memory vs. Fine-tuning
 *   **Decision:** User feedback (thumbs up/down) is summarized as a short text block and injected into the ranking prompt, rather than fine-tuning model weights or managing vector databases.
@@ -173,15 +173,19 @@ Once you are ready to persist states and send the daily digest report to your em
 python src/run_agent.py
 ```
 
-### Step 5: Set Up the Feedback Loop (Optional)
-If you want the in-context "Preference Memory" feedback loop to work (where clicking the 👍/👎 links in the daily digest updates the agent's ranking memory):
-1.  **Configure GitHub Workflow Permissions:**
-    *   Go to your GitHub repository webpage.
-    *   Click **Settings** (top navigation bar) -> **Actions** -> **General** on the left menu.
-    *   Scroll down to **Workflow permissions**, select **"Read and write permissions"**, and click **Save**. This allows the automated feedback script to commit updates to `state/preference_memory.yaml` and close the feedback issues.
-2.  **Submit Feedback:**
-    *   Simply click the 👍 or 👎 link inside your daily digest email or generated markdown.
-    *   Click the green **Submit new issue** button on the pre-filled GitHub page.
-    *   The `process_feedback.yml` workflow will automatically parse the issue, log your preference, commit it to the repository, and close the issue in seconds. No other manual action is required!
+### Step 5: How to Use Preference Memory (Local Loop)
+The agent utilizes an in-context **Preference Memory** to prioritize or demote updates dynamically based on your feedback. Since the agent executes locally, you can record your preferences by simply editing your local state file:
+
+1.  **Open the local preference file:** Open [`state/preference_memory.yaml`](state/preference_memory.yaml) (if it doesn't exist, you can create it).
+2.  **Add your preference votes:** Add structured feedback entries using the following YAML format:
+    ```yaml
+    - competitor: "Tesla"
+      vote: "useful"
+    - competitor: "Xiaomi"
+      vote: "not-useful"
+      reasons:
+        - "Routine thought-leadership content with no news"
+    ```
+3.  **LLM Integration:** On the next pipeline run, the agent will load these feedback logs, compile them into a preference summary, and inject them into the local model prompt context during the ranking step to dynamically adjust priority.
 
 
