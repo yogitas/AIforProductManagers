@@ -86,7 +86,9 @@ graph TB
     %% Deduplication & Classification
     LLM_Extract --> DedupCheck{"Deduplicate?"}
     SeenStore -->|Read seen hashes| DedupCheck
-    DedupCheck -->|New items| LLM_Filter
+    DedupCheck -->|New items| DateFilter{"Date / Age Filter?<br/>(Check metadata & URL)"}
+    DateFilter -->|Outdated (>28 days)| DiscardOutdated["Discard Outdated"]:::guard
+    DateFilter -->|Recent (<=28 days)| LLM_Filter
     
     %% Memory-weighted Ranking
     MemoryStore -->|Read in-context pref summary| LLM_Ranker
@@ -125,6 +127,7 @@ This project implements the industry-standard **Autonomous AI Agent Architecture
 *   **Search Budget Tracker:** Stops making web searches if the `max_search_calls` safety cap is breached to prevent API runaway bills.
 *   **Cold-Start Bounding:** Caps lookbacks to 48 hours when the run state is empty to prevent fetching massive historical search results.
 *   **State-Commit Sequence:** Writes to `seen_items.yaml` only after confirmed email/dashboard delivery to avoid silently dropping updates on delivery failure.
+*   **Heuristic Date Filter & Metadata Scraper:** Parses publication dates from URL paths/search snippets and falls back to fetching target webpage metadata (meta tags and JSON-LD). It programmatically discards any item older than 28 days in Python, ensuring report freshness and preventing new-year transition bugs.
 
 ### D. Action Layer (Actuators)
 *   **Seen Store & Preference Memory:** Lightweight YAML state files stored locally on the host machine.

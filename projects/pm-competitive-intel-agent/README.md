@@ -50,7 +50,6 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
     *   *Try/Except Isolation:* Wraps each crawler and search loop individually so that a timeout on one competitor site does not crash the entire pipeline run.
     *   *Grounding URL check:* Automatically drops items that lack verifiable source URLs before they reach the LLM.
     *   *Commit Sequencing:* Commits seen hashes to `seen_items.yaml` only *after* email delivery is verified as successful, ensuring no updates are lost in transit.
-    *   *Inference Timeout Protection:* Injects a `timeout=30` parameter into all LiteLLM completion queries, preventing the local Python process from freezing indefinitely if the local Ollama model server experiences latency or hangs.
     *   *Format-Resilient Parsing Fallback:* Automatically detects and wraps single JSON dict objects `{}` returned by local models (which sometimes ignore array instructions in prompts) into standard JSON lists `[{}]` to prevent format-related classification drops.
     *   *Rate Limit Sleeper:* Includes a 5-second delay between sequential search queries to comply with search engine rate limits and prevent IP blocks.
 
@@ -61,6 +60,10 @@ To deliver a high-quality MVP that demonstrates production-grade engineering wit
     For this agent to remain valuable and function reliably in a production environment, it must meet two key quality criteria, which we actively target and verify through our evaluations:
     *   *1. Crash-Free Output Parsing:* Since the agent crawls unstructured data from various sources across the web, we must ensure that the model output consistently conforms to the structured layout required by our parsing engine. This prevents system crashes and guarantees the reader always receives a clean, readable, and well-formatted digest.
     *   *2. Spam-Free Relevance Checking:* If the agent is too lenient, the daily report becomes filled with noise (such as general cleaning guides or social media milestones), leading to email fatigue and a loss of user trust. If it is too strict, the PM misses critical updates (like OTA OS rollouts or 5G connectivity partnerships). The evaluation suite verifies the agent's decisions against our business rules to keep the daily report highly focused and actionable.
+
+### H. Hybrid Deterministic Guardrails vs. Pure LLM Autonomy
+*   **Decision:** We implement a hybrid control model: Python deterministically scrapes target webpage HTML `<meta>` tags and JSON-LD schema to compute absolute article age in days (`age > 28`), filtering out stale data *before* the candidate ever hits the LLM.
+*   **Trade-off & Rationale:** Relying solely on LLM prompt instructions for recency filtering is non-deterministic and prone to model instruction skips (e.g. passing outdated 2024 articles). By enforcing a hard Python pre-filter, we guarantee 100% recency precision, eliminate stale articles prior to LLM processing, reduce token costs (COGS), and prevent new-year rollover bugs—demonstrating how deterministic software guardrails should complement soft LLM reasoning.
 
 ---
 

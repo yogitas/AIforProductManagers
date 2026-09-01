@@ -39,12 +39,21 @@ class RunLimitsConfig(BaseModel):
     max_search_calls: int
     max_report_items: int
     cold_start_lookback_hours: int
+    timeframe: str = Field(default="m")
 
     @field_validator("max_search_calls", "max_report_items", "cold_start_lookback_hours")
     @classmethod
     def must_be_positive(cls, v: int) -> int:
         if v <= 0:
             raise ValueError("Run limit parameters must be positive integers")
+        return v
+
+    @field_validator("timeframe")
+    @classmethod
+    def validate_timeframe(cls, v: str) -> str:
+        allowed = {"d", "w", "m", "y", "all"}
+        if v not in allowed:
+            raise ValueError(f"Timeframe must be one of {allowed}, got '{v}'")
         return v
 
 class DeliveryConfig(BaseModel):

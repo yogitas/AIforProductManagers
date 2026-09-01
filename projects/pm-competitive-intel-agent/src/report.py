@@ -11,7 +11,8 @@ def generate_markdown_report(
     extra_items: List[Dict[str, Any]],
     failed_sources: Dict[str, str],
     config: Any,
-    pref_summary: str
+    pref_summary: str,
+    test_mode: bool = False
 ) -> str:
     """
     Generates a markdown report for the daily digest.
@@ -20,7 +21,14 @@ def generate_markdown_report(
     md = []
     
     # Header
-    md.append(f"# Competitive Intelligence Digest - {date_str}")
+    title_suffix = " [TEST RUN]" if test_mode else ""
+    md.append(f"# Competitive Intelligence Digest - {date_str}{title_suffix}")
+    
+    if test_mode:
+        md.append("> [!IMPORTANT]")
+        md.append("> **TEST MODE / DRY RUN ACTIVE:** This digest was generated locally in test mode. No emails have been sent and state hashes were not persisted.")
+        md.append("")
+        
     md.append(f"**Primary Domain:** {config.domain.primary}")
     if config.domain.focus_subdomain:
         md.append(f"**Focus Subdomain:** `{config.domain.focus_subdomain}` (prioritized with ⭐)")
@@ -93,7 +101,8 @@ def generate_html_report(
     extra_items: List[Dict[str, Any]],
     failed_sources: Dict[str, str],
     config: Any,
-    pref_summary: str
+    pref_summary: str,
+    test_mode: bool = False
 ) -> str:
     """
     Renders the report as an HTML body, suitable for rich email delivery.
@@ -119,6 +128,7 @@ def generate_html_report(
       </style>
     </head>
     <body>
+      {test_banner}
       <h1>Competitive Intelligence Digest - {date}</h1>
       <p><strong>Primary Domain:</strong> {domain}<br/>
       {subdomain_info}</p>
@@ -135,6 +145,14 @@ def generate_html_report(
     </html>
     """
     
+    test_banner = ""
+    if test_mode:
+      test_banner = """
+      <div style="background-color: #FFF3CD; color: #856404; padding: 12px; border: 1px solid #FFEEBA; border-radius: 5px; margin-bottom: 20px; text-align: center; font-family: sans-serif; font-size: 14px; font-weight: bold;">
+        ⚠️ TEST RUN ACTIVE: No emails were sent and seen item states were not saved.
+      </div>
+      """
+      
     subdomain_info = f"<strong>Focus Subdomain:</strong> <code>{config.domain.focus_subdomain}</code>" if config.domain.focus_subdomain else ""
     
     warnings = ""
@@ -148,6 +166,7 @@ def generate_html_report(
     if not featured_items and not extra_items:
         body_content = "<p>No new material updates found today.</p>"
         return html_template.format(
+            test_banner=test_banner,
             date=date_str,
             domain=config.domain.primary,
             subdomain_info=subdomain_info,
@@ -196,6 +215,7 @@ def generate_html_report(
         extra_content += "</ul>"
         
     return html_template.format(
+        test_banner=test_banner,
         date=date_str,
         domain=config.domain.primary,
         subdomain_info=subdomain_info,

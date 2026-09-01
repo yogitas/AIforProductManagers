@@ -110,8 +110,43 @@ def run_mock_verification_test(mock_get, mock_litellm):
     )
     print("\nMOCK PIPELINE INTEGRATION VERIFICATION: PASSED SUCCESSFULLY!")
 
+def run_date_heuristic_unit_tests():
+    print("\nRunning unit tests for date filtering heuristic...")
+    from src.filter_and_rank import parse_date_from_item, is_item_outdated_heuristic
+    from datetime import datetime
+    
+    # Test case 1: YYYY/MM/DD in URL path
+    item = {"title": "Test Title", "url": "https://example.com/2026/08/20/page"}
+    parsed = parse_date_from_item(item)
+    assert parsed == datetime(2026, 8, 20), f"Expected 2026-08-20, got {parsed}"
+    
+    # Test case 2: "Month DD, YYYY" in text
+    item = {"title": "Updated on Aug 26, 2026", "url": "https://example.com/page"}
+    parsed = parse_date_from_item(item)
+    assert parsed == datetime(2026, 8, 26), f"Expected 2026-08-26, got {parsed}"
+    
+    # Test case 3: "date" field check
+    item = {"title": "Title", "url": "https://example.com/page", "date": "2 days ago"}
+    parsed = parse_date_from_item(item)
+    assert parsed is not None
+    assert (datetime.now() - parsed).days in [1, 2, 3], f"Expected 2 days age, got parsed: {parsed}"
+    
+    # Test case 4: Outdated item check
+    current_date = datetime(2026, 8, 29)
+    item = {"title": "Title", "url": "https://example.com/page", "date": "2025-06-30"}
+    is_outdated = is_item_outdated_heuristic(item, current_date)
+    assert is_outdated is True, "Expected item from 2025 to be outdated"
+    
+    # Test case 5: Recent item check
+    item = {"title": "Title", "url": "https://example.com/page", "date": "2026-08-25"}
+    is_outdated = is_item_outdated_heuristic(item, current_date)
+    assert is_outdated is False, "Expected item from 2026-08-25 to be recent"
+
+    print("All date heuristic unit tests PASSED!")
+
 if __name__ == "__main__":
     try:
+        run_date_heuristic_unit_tests()
         run_mock_verification_test()
     except Exception as e:
         print(f"\nVerification test failed: {e}", file=sys.stderr)

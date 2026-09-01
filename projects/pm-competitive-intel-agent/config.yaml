@@ -5,10 +5,10 @@ llm_model: "ollama/llama3.1"
 
 domain:
   # The high-level industry or technology domain of interest.
-  primary: "luxury passenger vehicles and premium electric cars"
+  primary: "preimium luxury cars and automotives"
   # Optional single string. If set, items matching it are flagged and prioritized
   # in the daily digest, but other general domain items are not filtered out.
-  focus_subdomain: "premium electric vehicles and software-driven features"
+  focus_subdomain: "infoitainment, connectiivity, software defined vehicle and software-driven features"
 
 competitors:
   # Direct global luxury competitors (strong in US, China, and EMEA)
@@ -60,7 +60,9 @@ run_limits:
   max_report_items: 10
   # GUARDRAIL: Bounds search results for the very first execution to avoid fetching months of history.
   cold_start_lookback_hours: 48
+  # Timeframe to query from DuckDuckGo search: 'd' (past day), 'w' (past week), 'm' (past month), 'y' (past year), or 'all'
+  timeframe: "w"
 
 delivery:
   # The fallback email address to receive reports. This will be overridden by the REPORT_TO_EMAIL env var.
-  to_email: "product-team@example.com"
+  to_email: "suryawanshiyogitas@gmail.com"

@@ -172,3 +172,15 @@
     - type: is-json
     - type: javascript
       value: "JSON.parse(output).is_material === true"
+
+- vars:
+    primary_domain: "luxury passenger vehicles and premium electric cars"
+    competitor: "Mercedes-Benz"
+    title: "Mercedes-Benz rolls out MBUX infotainment update"
+    description: "An old news article describing how Mercedes-Benz rolled out early MBUX features back in the year 2023."
+    url: "https://example.com/2023/12/10/old-news"
+    current_date: "2026-08-29"
+  assert:
+    - type: is-json
+    - type: javascript
+      value: "JSON.parse(output).is_material === false"

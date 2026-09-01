@@ -44,7 +44,7 @@ def run_litellm_completion(model: str, messages: list, api_key: str, budget_trac
         api_key=api_key,
         temperature=0.1,
         response_format={"type": "json_object"},
-        timeout=30
+        timeout=90
     )
     if budget_tracker and hasattr(response, "usage") and response.usage:
         budget_tracker.add_tokens(
@@ -106,13 +106,15 @@ def collect_from_search(
     domain_primary: str,
     litellm_model: str,
     api_key: str,
-    budget_tracker: Any = None
+    budget_tracker: Any = None,
+    timeframe: str = "m"
 ) -> List[Dict[str, Any]]:
     """
     Executes a keyless local search using DuckDuckGo's raw HTML interface.
     Robust, lightweight, and bypasses standard API rate blocks.
     """
-    url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
+    df_param = f"&df={timeframe}" if timeframe and timeframe != "all" else ""
+    url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}{df_param}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
@@ -172,6 +174,7 @@ def collect_from_search(
     2. "description": A concise 1-2 sentence summary of the update
     3. "url": The exact source URL from the verified list that supports this update. This URL MUST be in the verified list.
     4. "competitor": The name '{competitor_name}'
+    5. "date": The publication date, event date, or relative time mentioned in the snippet or URL path (e.g. "Aug 26, 2026", "2 days ago", "Dec 2025"). If not mentioned, set to null.
     
     Respond ONLY with a JSON list of objects matching the schema:
     [
@@ -179,7 +182,8 @@ def collect_from_search(
         "title": "string",
         "description": "string",
         "url": "string",
-        "competitor": "string"
+        "competitor": "string",
+        "date": "string or null"
       }}
     ]
     Do not return any other text.
@@ -197,7 +201,13 @@ def collect_from_search(
             for item in items:
                 # GUARDRAIL: Grounding requirement
                 if item.get("url") and item.get("title") and item.get("description"):
-                    valid_items.append(item)
+                    valid_items.append({
+                        "title": item["title"],
+                        "description": item["description"],
+                        "url": item["url"],
+                        "competitor": item["competitor"],
+                        "date": item.get("date")
+                    })
             return valid_items
     except Exception as e:
         logger.error(f"Failed to parse LLM structured output for competitor {competitor_name}: {e}")
@@ -237,6 +247,7 @@ def collect_from_crawl(
     2. "description": A concise 1-2 sentence summary (paraphrased to comply with copyright).
     3. "url": The exact source URL: "{source_url}"
     4. "competitor": The name '{competitor_name}'
+    5. "date": The publication date, event date, or relative time mentioned in the text (e.g. "Aug 26, 2026", "3 days ago"). If not mentioned, set to null.
     
     Respond ONLY with a JSON list of objects matching the schema:
     [
@@ -244,7 +255,8 @@ def collect_from_crawl(
         "title": "string",
         "description": "string",
         "url": "{source_url}",
-        "competitor": "{competitor_name}"
+        "competitor": "{competitor_name}",
+        "date": "string or null"
       }}
     ]
     If there are no material updates, return an empty list: [].
@@ -263,7 +275,13 @@ def collect_from_crawl(
             for item in items:
                 # GUARDRAIL: Grounding requirement
                 if item.get("url") and item.get("title") and item.get("description"):
-                    valid_items.append(item)
+                    valid_items.append({
+                        "title": item["title"],
+                        "description": item["description"],
+                        "url": item["url"],
+                        "competitor": item["competitor"],
+                        "date": item.get("date")
+                    })
             return valid_items
     except Exception as e:
         logger.error(f"Failed to parse LLM crawling output for {competitor_name} source {source_url}: {e}")
@@ -310,7 +328,8 @@ def collect_all(
                     domain_primary=config.domain.primary,
                     litellm_model=config.llm_model,
                     api_key=api_key_str,
-                    budget_tracker=budget_tracker
+                    budget_tracker=budget_tracker,
+                    timeframe=config.run_limits.timeframe
                 )
                 comp_items.extend(search_items)
                 # Rate limit protection: sleep briefly between search queries to respect API quotas
@@ -355,7 +374,8 @@ def collect_all(
                     domain_primary=config.domain.primary,
                     litellm_model=config.llm_model,
                     api_key=api_key_str,
-                    budget_tracker=budget_tracker
+                    budget_tracker=budget_tracker,
+                    timeframe=config.run_limits.timeframe
                 )
                 # Map to watch category
                 for item in watch_items:

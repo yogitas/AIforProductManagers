@@ -25,5 +25,10 @@ providers:
 # Each test case declares variables (competitor, title, description) and assertions:
 # - `is-json`: Asserts the LLM output is valid parseable JSON.
 # - `javascript`: Parses output JSON programmatically and asserts `is_material` boolean correctness.
+defaultTest:
+  vars:
+    current_date: "2026-08-29"
+    url: "https://example.com/default-news-update"
+
 tests:
   - file://golden_set.yaml

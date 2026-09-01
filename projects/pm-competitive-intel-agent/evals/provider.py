@@ -33,7 +33,7 @@ def call_api(prompt, options, context):
             api_key=api_key,
             temperature=0.0,  # 0.0 temperature ensures tests are deterministic
             response_format={"type": "json_object"},
-            timeout=30
+            timeout=90
         )
         output = response.choices[0].message.content or ""
         return {

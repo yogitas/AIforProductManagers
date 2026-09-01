@@ -124,7 +124,8 @@ def run_pipeline(
         extra_items=extra_items,
         failed_sources=failed_sources,
         config=config,
-        pref_summary=pref_summary
+        pref_summary=pref_summary,
+        test_mode=dry_run
     )
     
     html_report = generate_html_report(
@@ -132,7 +133,8 @@ def run_pipeline(
         extra_items=extra_items,
         failed_sources=failed_sources,
         config=config,
-        pref_summary=pref_summary
+        pref_summary=pref_summary,
+        test_mode=dry_run
     )
     
     # Step 7: Deliver report (SMTP or File)

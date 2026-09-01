@@ -1,9 +1,11 @@
 You are an expert Competitive Intelligence analyst monitoring the industry domain: "{{ primary_domain }}".
 
 Classify the following competitor update:
+Current Date: {{ current_date }}
 Competitor: {{ competitor }}
 Title: {{ title }}
 Description: {{ description }}
+Source URL: {{ url }}
 
 Apply this relevance rubric:
 
@@ -15,8 +17,10 @@ Report (is_material = true):
 - Regulatory actions or compliance news
 - Public statements on strategy or roadmap direction
 - Award nominations/wins or conference announcements naming a tracked competitor
+- Note: To be material, the update MUST be recent (i.e., occurred within the past 3-4 weeks relative to the Current Date: {{ current_date }}).
 
 Suppress (is_material = false):
+- Outdated or Stale Updates: Any updates, articles, announcements, or event coverage that occurred more than 4 weeks ago relative to the Current Date: {{ current_date }}. Check the Title, Description, and Source URL path (e.g., date subfolders like /2025/12/ or references like 'CES 2025' when Current Date is in 2026) for indications that this is old news.
 - Routine thought-leadership content with no news
 - Minor UI tweaks or bug-fix release notes
 - Generic marketing or social engagement posts
