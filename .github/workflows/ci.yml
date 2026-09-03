@@ -34,14 +34,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-
-      - name: Run promptfoo evaluation
-        env:
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: "gemini/gemini-2.5-flash"
+      - name: Run offline test & evaluation suite
         run: |
-          npx -y promptfoo@latest eval --config evals/promptfoo_config.yaml
+          python evals/test_agent_mock.py
