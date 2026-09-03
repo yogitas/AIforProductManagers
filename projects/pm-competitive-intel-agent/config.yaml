@@ -18,6 +18,8 @@ competitors:
     sources: []
   - name: "Tesla"
     sources: []
+  - name: "Porsche"
+    sources: []
   # Leading Chinese premium EV/hybrid disrupters
   - name: "BYD"
     sources: []
@@ -41,10 +43,16 @@ watchlist:
     type: "analyst"
   - name: "JD Power"
     type: "analyst"
+  - name: "McKinsey Center for Future Mobility"
+    type: "analyst"
+  - name: "S&P Global Mobility (AutoTechInsight)"
+    type: "analyst"
   - name: "CES"
     type: "conference"
   - name: "Geneva Motor Show"
     type: "conference"
+  - name: "IAA Mobility"
+    type: conference  
 
 schedule:
   # The targeted daily delivery time in 24-hour format (HH:MM).

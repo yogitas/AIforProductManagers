@@ -179,18 +179,21 @@ python src/run_agent.py
 ```
 
 ### Step 5: How to Use Preference Memory (Local Loop)
-The agent utilizes an in-context **Preference Memory** to prioritize or demote updates dynamically based on your feedback. Since the agent executes locally, you can record your preferences by simply editing your local state file:
+The agent utilizes an in-context **Preference Memory** to prioritize or demote updates dynamically based on your feedback. Since the agent executes 100% locally with no external cloud dependencies, you can easily record your preference votes:
 
-1.  **Open the local preference file:** Open [`state/preference_memory.yaml`](state/preference_memory.yaml) (if it doesn't exist, you can create it).
-2.  **Add your preference votes:** Add structured feedback entries using the following YAML format:
-    ```yaml
-    - competitor: "Tesla"
-      vote: "useful"
-    - competitor: "Xiaomi"
-      vote: "not-useful"
-      reasons:
-        - "Routine thought-leadership content with no news"
+1.  **Option A (Interactive Terminal Menu):** Run the local feedback CLI tool in your terminal:
+    ```bash
+    python src/feedback.py
     ```
-3.  **LLM Integration:** On the next pipeline run, the agent will load these feedback logs, compile them into a preference summary, and inject them into the local model prompt context during the ranking step to dynamically adjust priority.
+    This presents an interactive list of recent digest updates where you can choose an item number and select 👍 Useful or 👎 Not Useful.
+
+2.  **Option B (Direct Vote Command):** Run a 1-line vote command using the item ID printed under each update:
+    ```bash
+    python src/feedback.py --id <item_id> --vote useful
+    # or
+    python src/feedback.py --id <item_id> --vote not-useful --reason "Routine PR noise"
+    ```
+
+3.  **Local Persistence & LLM Tuning:** Your votes are immediately saved into [`state/preference_memory.yaml`](state/preference_memory.yaml). On the next pipeline run, the agent loads these feedback logs, compiles an in-context preference summary, and injects it into the local model prompt context during the ranking step to dynamically adjust priority.
 
 

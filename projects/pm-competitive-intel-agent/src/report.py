@@ -5,6 +5,7 @@ Includes structured formatting grouped by competitor.
 import os
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
+from src.state_store import get_item_id
 
 def generate_markdown_report(
     featured_items: List[Dict[str, Any]],
@@ -68,11 +69,13 @@ def generate_markdown_report(
         md.append(f"### {competitor}")
         for item in items:
             focus_badge = "⭐ **[FOCUS SUBDOMAIN]** " if item.get("is_focus") else ""
+            item_id = item.get("id", get_item_id(item["url"], item["title"]))
             
             md.append(f"#### {focus_badge}{item['title']}")
             md.append(f"- **Summary:** {item['description']}")
             md.append(f"- **Source:** [Read Full Article]({item['url']})")
             md.append(f"- **Materiality Reason:** *{item.get('materiality_reason', 'N/A')}*")
+            md.append(f"- **Local Feedback Command:** `python src/feedback.py --id {item_id} --vote useful` (or `not-useful`)")
             md.append("")
             
     # GUARDRAIL: Report size cap
@@ -89,7 +92,11 @@ def generate_markdown_report(
             
     # Add active preference memory summary for visibility
     md.append("\n---")
-    md.append("### Active Preference Memory Summary")
+    md.append("### 💡 Local Preference Memory Feedback")
+    md.append("All preferences are stored 100% locally in `state/preference_memory.yaml` without cloud dependencies:")
+    md.append("1. **Interactive Terminal CLI:** Run `python src/feedback.py` in your terminal to review and vote on updates.")
+    md.append("2. **Direct Command:** Run `python src/feedback.py --id <item_id> --vote useful` (or `not-useful`).")
+    md.append("\n### Active Preference Memory Summary")
     md.append("```")
     md.append(pref_summary)
     md.append("```")
@@ -141,6 +148,18 @@ def generate_html_report(
       
       <h3>Active Preference Memory</h3>
       <div class="pref-box">{pref_summary}</div>
+      <script>
+        function logLocalFeedback(itemId, vote) {{
+          var cmd = "python src/feedback.py --id " + itemId + " --vote " + vote;
+          if (navigator.clipboard) {{
+            navigator.clipboard.writeText(cmd);
+          }}
+          var statusEl = document.getElementById("status-" + itemId);
+          if (statusEl) {{
+            statusEl.innerHTML = "✓ Recorded as " + vote.toUpperCase() + "! (Command copied: <code>" + cmd + "</code>)";
+          }}
+        }}
+      </script>
     </body>
     </html>
     """
@@ -191,6 +210,7 @@ def generate_html_report(
             is_focus = item.get("is_focus", False)
             focus_class = "focus" if is_focus else ""
             badge = '<span class="badge">⭐ Focus Subdomain</span><br/>' if is_focus else ""
+            item_id = item.get("id", get_item_id(item["url"], item["title"]))
             
             body_content += f"""
             <div class="item {focus_class}">
@@ -199,6 +219,12 @@ def generate_html_report(
               <p style="margin: 5px 0;">{item['description']}</p>
               <small><strong>Source:</strong> <a href="{item['url']}">{item['url']}</a><br/>
               <strong>Materiality Reason:</strong> <em>{item.get('materiality_reason', 'N/A')}</em></small>
+              <div class="feedback" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #E0E0E0;">
+                <span style="font-weight: bold; font-size: 12px; color: #444; margin-right: 10px;">Was this update useful?</span>
+                <button onclick="logLocalFeedback('{item_id}', 'useful')" style="background-color: #E6F4EA; color: #137333; border: 1px solid #CEEAD6; padding: 4px 12px; border-radius: 14px; font-weight: bold; font-size: 12px; cursor: pointer; margin-right: 8px;">👍 Useful</button>
+                <button onclick="logLocalFeedback('{item_id}', 'not-useful')" style="background-color: #FCE8E6; color: #C5221F; border: 1px solid #FAD2CF; padding: 4px 12px; border-radius: 14px; font-weight: bold; font-size: 12px; cursor: pointer;">👎 Not Useful</button>
+                <span id="status-{item_id}" style="margin-left: 10px; font-size: 11px; font-weight: bold; color: #137333;"></span>
+              </div>
             </div>
             """
             
